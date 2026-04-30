@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SCGP Agent Hub Architecture</title>
+  <style>
+    :root {
+      --coral: #ff5c39;
+      --coral-dark: #d93f21;
+      --navy: #1b3139;
+      --navy-soft: #2a4750;
+      --blue: #0a84ff;
+      --blue-soft: #eaf4ff;
+      --mint: #00a972;
+      --amber: #ff9900;
+      --paper: #fbfaf7;
+      --canvas: #f4f0ea;
+      --surface: #fffdf8;
+      --surface-2: #f7f4ef;
+      --line: #ded8cf;
+      --line-strong: #c9bfb4;
+      --text: #1b3139;
+      --muted: #5a6f7c;
+      --muted-2: #7f8f98;
+      --shadow: 0 18px 50px rgba(41, 33, 24, 0.11);
+      --radius-lg: 26px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 28px;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(255, 92, 57, 0.08), transparent 34%),
+        linear-gradient(180deg, var(--canvas), #eee7dd);
+      color: var(--text);
+    }
+
+    .page {
+      width: 1420px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 34px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      padding: 26px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(255, 92, 57, 0.24);
+      border-radius: 999px;
+      background: rgba(255, 92, 57, 0.08);
+      color: var(--coral-dark);
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 12px 0 7px;
+      max-width: 870px;
+      color: var(--text);
+      font-size: 34px;
+      line-height: 1.04;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      max-width: 890px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.46;
+    }
+
+    .meta {
+      display: grid;
+      gap: 8px;
+      min-width: 260px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface);
+      padding: 14px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .meta strong {
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .platform-frame {
+      border: 3px solid var(--coral);
+      border-radius: 24px;
+      background: var(--surface);
+      padding: 0 16px 16px;
+    }
+
+    .platform-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 0 -16px 14px;
+      border-radius: 18px 18px 0 0;
+      background: var(--coral);
+      color: #fff8f4;
+      padding: 13px 18px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .platform-title span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .platform-title .chips {
+      display: flex;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .platform-title .chips b {
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      padding: 6px 9px;
+    }
+
+    .arch-grid {
+      display: grid;
+      grid-template-columns: 190px 260px 300px 285px 285px;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .lane {
+      position: relative;
+      display: flex;
+      min-height: 650px;
+      flex-direction: column;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface-2);
+      padding: 12px;
+    }
+
+    .lane-head {
+      display: flex;
+      min-height: 48px;
+      align-items: center;
+      gap: 10px;
+      border-radius: 14px;
+      background: var(--navy);
+      color: #f6f7f4;
+      padding: 10px 12px;
+    }
+
+    .lane-head .num {
+      display: grid;
+      width: 24px;
+      height: 24px;
+      flex: 0 0 auto;
+      place-items: center;
+      border: 2px solid #f6f7f4;
+      border-radius: 999px;
+      background: var(--coral);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .lane-head .label {
+      display: grid;
+      gap: 2px;
+    }
+
+    .lane-head strong {
+      font-size: 14px;
+      line-height: 1.05;
+    }
+
+    .lane-head small {
+      color: rgba(246, 247, 244, 0.74);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .group-title {
+      margin: 5px 0 0;
+      border-radius: 10px;
+      background: var(--navy-soft);
+      color: #f6f7f4;
+      padding: 7px 9px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .card {
+      display: grid;
+      gap: 7px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--surface);
+      padding: 11px;
+      color: var(--text);
+    }
+
+    .card.compact {
+      padding: 9px 10px;
+    }
+
+    .card .top {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .card svg {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
+      color: var(--coral-dark);
+    }
+
+    .card.blue svg {
+      color: var(--blue);
+    }
+
+    .card.mint svg {
+      color: var(--mint);
+    }
+
+    .card.amber svg {
+      color: var(--amber);
+    }
+
+    .card strong {
+      font-size: 13px;
+      line-height: 1.15;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .tag {
+      border: 1px solid rgba(27, 49, 57, 0.1);
+      border-radius: 999px;
+      background: rgba(27, 49, 57, 0.05);
+      color: var(--muted);
+      padding: 4px 7px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .mini-list li {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid rgba(27, 49, 57, 0.07);
+      padding-bottom: 5px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .mini-list li:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .mini-list b {
+      color: var(--text);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .flow-band {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 14px;
+      border-radius: 18px;
+      background: var(--navy);
+      padding: 12px;
+      color: #f6f7f4;
+    }
+
+    .flow-step {
+      position: relative;
+      display: grid;
+      gap: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 10px;
+      min-height: 88px;
+    }
+
+    .flow-step:not(:last-child)::after {
+      content: "->";
+      position: absolute;
+      right: -17px;
+      top: 35px;
+      color: rgba(246, 247, 244, 0.7);
+      font-weight: 800;
+    }
+
+    .flow-step b {
+      color: #fff8f4;
+      font-size: 12px;
+    }
+
+    .flow-step small {
+      color: rgba(246, 247, 244, 0.72);
+      font-size: 10px;
+      line-height: 1.3;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      border-radius: 18px;
+      background: var(--coral);
+      color: #fff8f4;
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .legend .items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .legend b {
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      padding: 6px 9px;
+    }
+
+    .ic-inline {
+      width: 18px;
+      height: 18px;
+    }
+  </style>
+</head>
+<body>
+  <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+    <symbol id="ic-user" viewBox="0 0 24 24">
+      <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/>
+      <path d="M4 20c0-4.2 3.6-7 8-7s8 2.8 8 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="ic-admin" viewBox="0 0 24 24">
+      <path d="M12 2l7 3v5c0 5.1-3.2 9.8-7 11-3.8-1.2-7-5.9-7-11V5l7-3z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M9.2 12.2l1.9 1.9 4-4.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-screen" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="13" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M8 21h8M12 17v4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="ic-route" viewBox="0 0 24 24">
+      <path d="M5 7h8a4 4 0 010 8H9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <circle cx="5" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <circle cx="9" cy="15" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M17 4l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-state" viewBox="0 0 24 24">
+      <rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M8 9h8M8 13h5M8 17h7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="ic-api" viewBox="0 0 24 24">
+      <path d="M8 8l-4 4 4 4M16 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M14 5l-4 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="ic-stream" viewBox="0 0 24 24">
+      <path d="M4 8h10a3 3 0 110 6H7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M7 11l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="18" cy="11" r="2" fill="currentColor"/>
+    </symbol>
+    <symbol id="ic-gear" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M19 12a7.2 7.2 0 00-.1-1l2-1.5-2-3.4-2.4 1a7.8 7.8 0 00-1.7-1L14.5 3h-5l-.3 3.1a7.8 7.8 0 00-1.7 1l-2.4-1-2 3.4 2 1.5a7.2 7.2 0 000 2l-2 1.5 2 3.4 2.4-1a7.8 7.8 0 001.7 1l.3 3.1h5l.3-3.1a7.8 7.8 0 001.7-1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-db" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="6" rx="7.5" ry="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M4.5 6v11c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M4.5 11.5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3" fill="none" stroke="currentColor" stroke-width="1.3"/>
+    </symbol>
+    <symbol id="ic-chart" viewBox="0 0 24 24">
+      <path d="M4 20h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      <rect x="6" y="11" width="3" height="6" rx="1" fill="currentColor"/>
+      <rect x="11" y="7" width="3" height="10" rx="1" fill="currentColor"/>
+      <rect x="16" y="4" width="3" height="13" rx="1" fill="currentColor"/>
+    </symbol>
+    <symbol id="ic-cloud" viewBox="0 0 24 24">
+      <path d="M8 18h9a4 4 0 00.5-8 6 6 0 00-11.2 1.4A3.5 3.5 0 008 18z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-spark" viewBox="0 0 24 24">
+      <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M18 16l.8 2.6L21 19l-2.2.4L18 22l-.8-2.6L15 19l2.2-.4L18 16z" fill="currentColor"/>
+    </symbol>
+  </svg>
+
+  <main class="page">
+    <header>
+      <div>
+        <div class="eyebrow"><svg class="ic-inline"><use href="#ic-spark"/></svg> Current-state architecture</div>
+        <h1>SCGP Agent Chat Hub</h1>
+        <p class="subtitle">
+          A Databricks Apps hosted multi-agent catalog and chat experience. React handles the
+          catalog, chat shell, streamed responses, charts, and preferences; FastAPI coordinates
+          OBO access, catalog discovery, chat dispatch, Lakebase state, and Databricks agent APIs.
+        </p>
+      </div>
+      <aside class="meta">
+        <strong>Runtime</strong>
+        <span>Databricks Apps -> Uvicorn workers -> FastAPI `/api/v1` + built Vite UI</span>
+        <strong>Primary flow</strong>
+        <span>Catalog selection -> chat stream -> persisted conversation -> charts and suggestions</span>
+      </aside>
+    </header>
+
+    <section class="platform-frame">
+      <div class="platform-title">
+        <span><svg class="ic-inline"><use href="#ic-cloud"/></svg> Databricks Apps Boundary</span>
+        <span class="chips"><b>OBO Auth</b><b>Lakebase</b><b>Model Serving</b><b>Genie</b></span>
+      </div>
+
+      <div class="arch-grid">
+        <section class="lane">
+          <div class="lane-head">
+            <span class="num">1</span>
+            <span class="label"><strong>Users</strong><small>SCGP work surfaces</small></span>
+          </div>
+
+          <div class="card">
+            <div class="top"><svg><use href="#ic-user"/></svg><strong>Employees</strong></div>
+            <p>Browse AI agents, ask questions, resume conversations, export charts, and reuse pinned prompts.</p>
+            <div class="tags"><span class="tag">desktop</span><span class="tag">mobile</span><span class="tag">chat</span></div>
+          </div>
+
+          <div class="card mint">
+            <div class="top"><svg><use href="#ic-admin"/></svg><strong>Admins</strong></div>
+            <p>Manage catalog visibility, feature flags, memory mode, tag config, and manual endpoints.</p>
+            <div class="tags"><span class="tag">catalog</span><span class="tag">settings</span></div>
+          </div>
+
+          <div class="group-title">Entry Points</div>
+          <div class="card compact blue">
+            <div class="top"><svg><use href="#ic-screen"/></svg><strong>App Shell</strong></div>
+            <p>Sidebar on desktop, mobile tab bar on smaller screens, theme preference persisted per user.</p>
+          </div>
+        </section>
+
+        <section class="lane">
+          <div class="lane-head">
+            <span class="num">2</span>
+            <span class="label"><strong>React UI</strong><small>Vite + TanStack</small></span>
+          </div>
+
+          <div class="card blue">
+            <div class="top"><svg><use href="#ic-route"/></svg><strong>Routes</strong></div>
+            <p>`/catalog`, `/catalog/$agentId`, `/chat`, `/chat/new`, `/chat/$conversationId`, `/admin/*`, `/preferences`.</p>
+          </div>
+
+          <div class="card">
+            <div class="top"><svg><use href="#ic-state"/></svg><strong>Client State</strong></div>
+            <p>React Query caches REST resources. Zustand owns the live chat stream, charts, suggestions, and pending tool choice.</p>
+            <div class="tags"><span class="tag">React Query</span><span class="tag">Zustand</span></div>
+          </div>
+
+          <div class="card amber">
+            <div class="top"><svg><use href="#ic-chart"/></svg><strong>Answer Rendering</strong></div>
+            <p>Markdown, syntax highlighting, tool-call timeline, ECharts cards, chart stacks, CSV/table toggle, and suggestion chips.</p>
+          </div>
+
+          <div class="group-title">Streaming Client</div>
+          <div class="card compact">
+            <div class="top"><svg><use href="#ic-stream"/></svg><strong>`useChat()`</strong></div>
+            <p>Posts to `/api/v1/chat/{endpoint}` and parses SSE `data:` events.</p>
+          </div>
+        </section>
+
+        <section class="lane">
+          <div class="lane-head">
+            <span class="num">3</span>
+            <span class="label"><strong>FastAPI API</strong><small>router + middleware</small></span>
+          </div>
+
+          <div class="card">
+            <div class="top"><svg><use href="#ic-api"/></svg><strong>HTTP Boundary</strong></div>
+            <p>Singleton `/api/v1` router with typed models and handlers delegating to service modules.</p>
+            <div class="tags"><span class="tag">auth</span><span class="tag">roles</span><span class="tag">rate limit</span></div>
+          </div>
+
+          <div class="card blue">
+            <div class="top"><svg><use href="#ic-stream"/></svg><strong>Chat Stream</strong></div>
+            <p>`POST /chat/{endpoint}` emits `started`, `token`, `tool_call`, `chart`, `suggestions`, `done`, and `error` events.</p>
+          </div>
+
+          <div class="card">
+            <div class="top"><svg><use href="#ic-gear"/></svg><strong>API Families</strong></div>
+            <ul class="mini-list">
+              <li><span>Catalog and access</span><b>/agents</b></li>
+              <li><span>Conversation CRUD</span><b>/conversations</b></li>
+              <li><span>Charts and suggestions</span><b>/messages</b></li>
+              <li><span>Admin operations</span><b>/admin</b></li>
+            </ul>
+          </div>
+
+          <div class="card compact amber">
+            <div class="top"><svg><use href="#ic-admin"/></svg><strong>Middleware</strong></div>
+            <p>Tracing, security headers, timeout, CORS, gzip, API versioning, and exception mapping.</p>
+          </div>
+        </section>
+
+        <section class="lane">
+          <div class="lane-head">
+            <span class="num">4</span>
+            <span class="label"><strong>Services + State</strong><small>business logic</small></span>
+          </div>
+
+          <div class="card blue">
+            <div class="top"><svg><use href="#ic-gear"/></svg><strong>Service Layer</strong></div>
+            <p>`chat_service`, `catalog_service`, `memory_service`, `chart_service`, `suggestion_service`, `pin_service`, `admin_service`.</p>
+          </div>
+
+          <div class="card mint">
+            <div class="top"><svg><use href="#ic-db"/></svg><strong>Lakebase</strong></div>
+            <p>Postgres-backed state with generated database credentials and idempotent boot migrations.</p>
+          </div>
+
+          <div class="group-title">Tables</div>
+          <div class="card compact">
+            <ul class="mini-list">
+              <li><span>Chat history</span><b>conversations, messages</b></li>
+              <li><span>Agent catalog</span><b>catalog_config</b></li>
+              <li><span>User controls</span><b>user_prefs, user_roles</b></li>
+              <li><span>Feature controls</span><b>admin_settings</b></li>
+              <li><span>Answer enrichments</span><b>chart_artifacts, suggestions_cache</b></li>
+              <li><span>Prompt reuse</span><b>pinned_questions, pin_events</b></li>
+              <li><span>Memory</span><b>memory_long_term</b></li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="lane">
+          <div class="lane-head">
+            <span class="num">5</span>
+            <span class="label"><strong>Databricks APIs</strong><small>agents and data plane</small></span>
+          </div>
+
+          <div class="card mint">
+            <div class="top"><svg><use href="#ic-admin"/></svg><strong>OBO WorkspaceClient</strong></div>
+            <p>User-scoped access checks for serving endpoints, Genie spaces, SQL, and app user identity.</p>
+          </div>
+
+          <div class="card">
+            <div class="top"><svg><use href="#ic-spark"/></svg><strong>Agent Backends</strong></div>
+            <ul class="mini-list">
+              <li><span>Agent Bricks</span><b>MAS / KA</b></li>
+              <li><span>Serving endpoints</span><b>/invocations</b></li>
+              <li><span>Genie Spaces</span><b>conversation API</b></li>
+              <li><span>UC tagged tools</span><b>functions / MCP</b></li>
+            </ul>
+          </div>
+
+          <div class="card amber">
+            <div class="top"><svg><use href="#ic-cloud"/></svg><strong>SQL Warehouse</strong></div>
+            <p>Admin warehouse powers UC tag discovery, function metadata, HTTP connection execution, and MCP connection lookup.</p>
+          </div>
+
+          <div class="card compact blue">
+            <div class="top"><svg><use href="#ic-route"/></svg><strong>Bundle + App Config</strong></div>
+            <p>`databricks.yml` deploys the app; `app.yaml` sets runtime env, health checks, and OBO scopes.</p>
+          </div>
+        </section>
+      </div>
+
+      <section class="flow-band" aria-label="Runtime flow">
+        <div class="flow-step"><b>Catalog</b><small>React Query loads visible agents, Genie spaces, and access hints.</small></div>
+        <div class="flow-step"><b>Select</b><small>User opens agent detail or starts `/chat/new?agent=...`.</small></div>
+        <div class="flow-step"><b>Persist</b><small>FastAPI creates conversation and user message in Lakebase.</small></div>
+        <div class="flow-step"><b>Dispatch</b><small>Chat service routes to serving, Genie, UC HTTP, or MCP path.</small></div>
+        <div class="flow-step"><b>Stream</b><small>SSE sends tokens, tool events, chart artifacts, and suggestions.</small></div>
+        <div class="flow-step"><b>Render</b><small>Zustand updates the live transcript, URL, sidebar, charts, and status.</small></div>
+        <div class="flow-step"><b>Rehydrate</b><small>Reload uses conversation, chart, and suggestion endpoints from Lakebase.</small></div>
+      </section>
+    </section>
+
+    <footer class="legend">
+      <span>SCGP Agent Hub | Current-state app architecture | React, FastAPI, Lakebase, Databricks Apps</span>
+      <span class="items"><b>coral = app boundary</b><b>navy = layer headers</b><b>blue = UI/API flow</b><b>mint = identity/state</b><b>amber = data/analytics</b></span>
+    </footer>
+  </main>
+</body>
+</html>

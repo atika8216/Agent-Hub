@@ -1,0 +1,71 @@
+command:
+  - uvicorn
+  - scgp_agent_hub.backend.app:app
+  - --host
+  - 0.0.0.0
+  - --port
+  - "8000"
+  - --workers
+  - "2"
+
+env:
+  - name: LAKEBASE_PROJECT_ID
+    value: scgp-agent-hub
+  - name: LAKEBASE_BRANCH_ID
+    value: production
+  - name: LOG_LEVEL
+    value: INFO
+  # Comma-separated emails allowed through the `/api/v1/debug/me/scopes`
+  # diagnostic gate even when Lakebase is unavailable. See
+  # docs/obo-auth-design.md §14. Keep this short (app owner only).
+  - name: BOOTSTRAP_ADMIN_EMAILS
+    value: atika.antarasen@databricks.com
+  # Phase rollback levers (all default-off, docs/rollback-obo-gaps-2026-04-17.md).
+  # Set the corresponding env var to "1" in the Databricks App UI to activate:
+  #   * SCGP_DISABLE_UC_MCP_DISCOVERY=1 — Phase 1 (disable UC-tag discovery).
+  #   * SCGP_DISABLE_UC_MCP_CHAT=1      — Phase 2 (revert HTTP/MCP chat to stub).
+  #   * SCGP_LEGACY_UI=1                — Phase 3 (lock UI to legacy dark palette).
+  # SQL warehouse used by the app SP for UC tag discovery
+  # (system.information_schema.function_tags / connection_tags). The bundle
+  # also sets this via `resources.apps.*.config.env`, but the Databricks
+  # Apps runtime sources env vars from app.yaml, so we duplicate it here
+  # to guarantee propagation. Keep the value aligned with
+  # databricks.yml -> variables.scgp_admin_warehouse_id.
+  - name: SCGP_ADMIN_WAREHOUSE_ID
+    value: "7b7cd1e7e17a3862"
+
+user_authorization:
+  scopes:
+    - serving.serving-endpoints
+    - model-serving
+    - iam.access-control:workspace
+    # ``access-management`` is the scope the Agent Bricks permissions API
+    # (``/api/2.0/permissions/knowledge-assistants/{tile_id}``) actually
+    # demands for GET/PATCH. Discovered on 2026-04-27 while verifying the
+    # admin Grant catalog access button -- OBO returned:
+    #   "Provided OAuth token does not have required scopes: access-management".
+    # Declared here so the platform accepts it if/when it recognises the
+    # token; the admin button silently no-ops on unauthorized today.
+    - access-management
+    - sql
+    - dashboards.genie
+    # Note: Agent Bricks APIs (/api/2.0/tiles and
+    # /api/2.0/multi-agent-supervisors/{tile_id}) require the
+    # "all-apis" OAuth scope, which Databricks Apps does not expose
+    # in user_authorization.scopes (silently filtered). The backend
+    # in catalog_service.py falls back to the service principal for
+    # these reads; if the SP does not own the agent, the MAS detail
+    # refresh will fail and the row stays on its cached display name.
+    # See docs/rollback-obo-gaps-2026-04-17.md §Deploy I.
+
+health:
+  path: /api/v1/health/live
+  interval_seconds: 30
+  timeout_seconds: 5
+  failure_threshold: 3
+
+readiness:
+  path: /api/v1/health/ready
+  interval_seconds: 10
+  timeout_seconds: 5
+  failure_threshold: 3
