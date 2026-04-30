@@ -95,3 +95,6 @@ logs/
 .cache/
 tmp/
 temp/
+
+# ── Local-only docs (kept out of git) ──
+docs/es-tickets/
