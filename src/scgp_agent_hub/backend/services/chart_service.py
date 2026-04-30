@@ -290,11 +290,17 @@ def _data_zoom_inside_only() -> list[dict[str, Any]]:
     """Inside zoom only.
 
     A prior revision also returned a ``slider`` variant rendered at
-    ``bottom: 0`` with a fixed ``height: 16`` -- but the legend lives at
-    ``top: "bottom"`` in the ECharts grid, so the two elements overlapped
-    and the slider strip read as "a second chart peeking from under
-    the card" in the rendered card. Wheel / trackpad / touch drag still
-    zoom via the ``inside`` entry, so we lose nothing visual.
+    ``bottom: 0`` with a fixed ``height: 16`` -- but the legend used to
+    live at ``top: "bottom"`` in the ECharts grid, so the two elements
+    overlapped and the slider strip read as "a second chart peeking
+    from under the card" in the rendered card. The same failure mode
+    applied to the legend strip itself once the slider was removed:
+    the bottom-anchored legend + ``grid.bottom`` gutter still carved a
+    short band that users read as a second chart. We now anchor the
+    legend above the plot (see ``build_option`` grid padding and the
+    per-kind ``legend.top`` values) and shrink ``grid.bottom`` so there
+    is no dead strip below the x-axis. Wheel / trackpad / touch drag
+    still zoom via the ``inside`` entry, so we lose nothing visual.
     """
     return [{"type": "inside"}]
 
@@ -315,7 +321,7 @@ def build_option(
             if safe_title
             else {}
         ),
-        "grid": {"left": 48, "right": 24, "top": 48, "bottom": 56, "containLabel": True},
+        "grid": {"left": 48, "right": 24, "top": 64, "bottom": 32, "containLabel": True},
         "toolbox": _common_toolbox(),
     }
 
@@ -343,7 +349,7 @@ def build_option(
         return {
             **base,
             "tooltip": {"trigger": "item", "confine": True},
-            "legend": {"orient": "horizontal", "top": "bottom"},
+            "legend": {"orient": "horizontal", "top": 28, "left": "center"},
             "series": [
                 {
                     "type": "pie",
@@ -443,7 +449,6 @@ def _build_line_or_bar(
         return {
             **base,
             "tooltip": _common_tooltip(),
-            "legend": {"data": [columns[1].get("name", "")], "top": "bottom"},
             "xAxis": x_axis,
             "yAxis": {"type": "value", "name": columns[1].get("name", "")},
             "dataZoom": _data_zoom_inside_only(),
@@ -493,7 +498,7 @@ def _build_line_or_bar(
     return {
         **base,
         "tooltip": _common_tooltip(),
-        "legend": {"data": series_names, "top": "bottom"},
+        "legend": {"data": series_names, "orient": "horizontal", "top": 28, "left": "center"},
         "xAxis": x_axis,
         "yAxis": {"type": "value"},
         "dataZoom": _data_zoom_inside_only(),

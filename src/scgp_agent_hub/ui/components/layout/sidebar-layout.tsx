@@ -37,7 +37,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         <div className="flex h-14 items-center gap-2 px-5">
           <Zap className="h-[18px] w-[18px] text-primary" />
           <span className="text-[0.9375rem] font-semibold tracking-[-0.01em] font-[family-name:var(--font-display)]">
-            SCGP Agent Hub
+            Agent Hub
           </span>
         </div>
 

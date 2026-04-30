@@ -384,3 +384,77 @@ class TestDataZoom:
         rows = [["A", 0.4], ["B", 0.6]]
         opt = cs.build_option("pie", cols, rows)
         assert "dataZoom" not in opt
+
+
+# --------------------------------------------------------------------------- #
+# Legend placement -- regression against the "bottom strip peek".
+#
+# Even after the slider dataZoom was removed, anchoring the legend at
+# ``top: "bottom"`` plus ``grid.bottom: 56`` left a visible band under the
+# plot that users read as a second mini-chart. The fix anchors the legend
+# above the plot (below the title) and shrinks the bottom gutter. These
+# tests lock the new placement in so the regression cannot silently return.
+# --------------------------------------------------------------------------- #
+
+
+class TestLegendPlacement:
+    def test_pie_legend_is_anchored_above_plot(self) -> None:
+        cols = [_col("seg", "STRING"), _col("share", "DOUBLE")]
+        rows = [["A", 0.4], ["B", 0.6]]
+        opt = cs.build_option("pie", cols, rows)
+        legend = opt.get("legend")
+        assert isinstance(legend, dict)
+        assert legend.get("top") != "bottom", (
+            "pie legend must not anchor at the bottom -- regresses "
+            "the 'second chart peek' glitch"
+        )
+        assert isinstance(legend.get("top"), int)
+
+    def test_multi_series_bar_legend_is_anchored_above_plot(self) -> None:
+        cols = [
+            _col("region", "STRING"),
+            _col("q1", "BIGINT"),
+            _col("q2", "BIGINT"),
+        ]
+        rows = [["W", 1, 2], ["E", 3, 4]]
+        opt = cs.build_option("bar", cols, rows)
+        legend = opt.get("legend")
+        assert isinstance(legend, dict)
+        assert legend.get("top") != "bottom"
+        assert isinstance(legend.get("top"), int)
+        assert legend.get("data") == ["q1", "q2"]
+
+    def test_multi_series_line_legend_is_anchored_above_plot(self) -> None:
+        cols = [
+            _col("day", "DATE"),
+            _col("revenue", "DOUBLE"),
+            _col("orders", "BIGINT"),
+        ]
+        rows = [["2026-01-01", 1.0, 2], ["2026-01-02", 1.5, 3]]
+        opt = cs.build_option("line", cols, rows)
+        legend = opt.get("legend")
+        assert isinstance(legend, dict)
+        assert legend.get("top") != "bottom"
+
+    @pytest.mark.parametrize("kind", ["bar", "line"])
+    def test_single_series_line_or_bar_omits_legend(self, kind: str) -> None:
+        # A single-series chart already labels itself via the y-axis
+        # name; the legend would be redundant noise above the plot. The
+        # builder must skip it to keep the top rail tidy.
+        cols = [_col("region", "STRING"), _col("revenue", "BIGINT")]
+        rows = [["West", 1000], ["East", 800]]
+        opt = cs.build_option(kind, cols, rows)  # type: ignore[arg-type]
+        assert "legend" not in opt, (
+            f"{kind} with one numeric column should not ship a legend"
+        )
+
+    def test_grid_reserves_room_at_top_not_bottom(self) -> None:
+        # The grid padding mirrors the legend move: more room at the top
+        # (title + legend), less at the bottom (x-axis labels only).
+        cols = [_col("region", "STRING"), _col("revenue", "BIGINT")]
+        rows = [["A", 1], ["B", 2]]
+        opt = cs.build_option("bar", cols, rows)
+        grid = opt.get("grid")
+        assert isinstance(grid, dict)
+        assert grid.get("top") == 64
+        assert grid.get("bottom") == 32

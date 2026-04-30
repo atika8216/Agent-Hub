@@ -103,7 +103,7 @@ function ChartCardShell({
   const chartInstanceRef = useRef<ECInstance | null>(null);
 
   const isTableKind = artifact.chart_kind === "table";
-  const option = useMemo(() => artifact.option, [artifact.option]);
+  const option = useMemo(() => normalizeLegacyOption(artifact.option), [artifact.option]);
 
   // ECharts' ``saveAsImage`` toolbox feature works but uses the current
   // canvas background which is transparent by default. We resolve a
@@ -434,6 +434,60 @@ function ResultTable({
 }
 
 // -- helpers --
+
+/*
+ * Charts persisted before the bottom-strip fix had ``legend.top: "bottom"``
+ * plus ``grid.bottom: 56``, which carved a short band under the plot that
+ * read as a second mini-chart. New charts are built with the legend anchored
+ * above the plot (see ``chart_service.py``), but anything already stored in
+ * ``chart_artifacts.option_json`` would otherwise keep the old layout on
+ * reload. This pure function rewrites the option at the render boundary so
+ * both code paths produce the same visual result -- no DB migration needed.
+ * Handles the object form of ``legend`` and the rarely-used array form.
+ */
+function normalizeLegacyOption(option: unknown): unknown {
+  if (!option || typeof option !== "object") return option;
+  const src = option as Record<string, unknown>;
+
+  let mutated = false;
+  const out: Record<string, unknown> = { ...src };
+
+  const rewriteLegend = (leg: Record<string, unknown>): Record<string, unknown> => {
+    if (leg.top === "bottom") {
+      mutated = true;
+      const { top: _drop, ...rest } = leg;
+      return { ...rest, top: 28, left: "center", orient: "horizontal" };
+    }
+    return leg;
+  };
+
+  const legend = src.legend;
+  if (legend && typeof legend === "object") {
+    if (Array.isArray(legend)) {
+      const nextArr = (legend as unknown[]).map((entry) =>
+        entry && typeof entry === "object"
+          ? rewriteLegend(entry as Record<string, unknown>)
+          : entry,
+      );
+      if (mutated) out.legend = nextArr;
+    } else {
+      const nextLegend = rewriteLegend(legend as Record<string, unknown>);
+      if (mutated) out.legend = nextLegend;
+    }
+  }
+
+  const grid = src.grid;
+  if (grid && typeof grid === "object" && !Array.isArray(grid)) {
+    const g = grid as Record<string, unknown>;
+    const needsGridFix = g.top === 48 || g.bottom === 56;
+    if (needsGridFix) {
+      mutated = true;
+      out.grid = { ...g, top: 64, bottom: 32 };
+    }
+  }
+
+  return mutated ? out : option;
+}
 
 function escapeCsv(value: string): string {
   if (value == null) return "";
