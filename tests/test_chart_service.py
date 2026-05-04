@@ -377,6 +377,25 @@ class TestDataZoom:
             f"{kind} accidentally ships a slider dataZoom"
         )
 
+    @pytest.mark.parametrize("kind", ["bar", "line", "scatter"])
+    def test_build_option_ships_exactly_one_inside_data_zoom(
+        self, kind: str
+    ) -> None:
+        # Lock the exact shape the frontend normalizer expects on legacy
+        # rehydrate. If a future commit appends a slider/clone entry the
+        # contract test fires here, not as a visual glitch in production.
+        if kind == "scatter":
+            cols = [_col("x", "DOUBLE"), _col("y", "DOUBLE")]
+            rows = [[1, 2], [3, 4]]
+        else:
+            cols = [_col("region", "STRING"), _col("revenue", "BIGINT")]
+            rows = [["A", 1], ["B", 2]]
+        opt = cs.build_option(kind, cols, rows)  # type: ignore[arg-type]
+        zoom = opt.get("dataZoom")
+        assert zoom == [{"type": "inside"}], (
+            f"{kind} dataZoom must equal [{{'type': 'inside'}}], got {zoom}"
+        )
+
     def test_pie_has_no_data_zoom(self) -> None:
         # Pie has no x-axis to zoom -- the builder intentionally leaves
         # ``dataZoom`` off; this asserts the omission stays deliberate.

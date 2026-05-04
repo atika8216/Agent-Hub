@@ -438,12 +438,21 @@ function ResultTable({
 /*
  * Charts persisted before the bottom-strip fix had ``legend.top: "bottom"``
  * plus ``grid.bottom: 56``, which carved a short band under the plot that
- * read as a second mini-chart. New charts are built with the legend anchored
- * above the plot (see ``chart_service.py``), but anything already stored in
+ * read as a second mini-chart. A second, even older revision of the
+ * backend also shipped ``dataZoom: [..., {"type": "slider"}]`` -- the
+ * slider track renders a mini axis strip at the bottom of the chart and
+ * is the same "second chart peeking" failure mode by another name. New
+ * charts are built clean (legend at top, ``dataZoom`` inside-only -- see
+ * ``chart_service.py``), but anything already stored in
  * ``chart_artifacts.option_json`` would otherwise keep the old layout on
- * reload. This pure function rewrites the option at the render boundary so
- * both code paths produce the same visual result -- no DB migration needed.
- * Handles the object form of ``legend`` and the rarely-used array form.
+ * reload. This pure function rewrites the option at the render boundary
+ * so legacy and new charts produce the same visual result -- no DB
+ * migration needed. Handles both the object form of ``legend`` /
+ * ``dataZoom`` and their array forms.
+ *
+ * Example legacy payload (now neutralized client-side):
+ *   { legend: {top: "bottom"}, grid: {top: 48, bottom: 56},
+ *     dataZoom: [{type: "inside"}, {type: "slider", height: 16, bottom: 0}] }
  */
 function normalizeLegacyOption(option: unknown): unknown {
   if (!option || typeof option !== "object") return option;
@@ -483,6 +492,23 @@ function normalizeLegacyOption(option: unknown): unknown {
     if (needsGridFix) {
       mutated = true;
       out.grid = { ...g, top: 64, bottom: 32 };
+    }
+  }
+
+  // Drop any legacy ``slider`` (or other non-inside) dataZoom entries.
+  // The backend ships inside-only today; if a persisted option carries a
+  // slider, it paints the "second chart peeking" strip at the bottom.
+  const dataZoom = src.dataZoom;
+  if (dataZoom !== undefined) {
+    const entries = Array.isArray(dataZoom) ? dataZoom : [dataZoom];
+    const isInside = (e: unknown): boolean =>
+      !!e && typeof e === "object" && (e as Record<string, unknown>).type === "inside";
+    const insideOnly = entries.filter(isInside);
+    const hadSlider = entries.length !== insideOnly.length;
+    const wrappedScalar = !Array.isArray(dataZoom);
+    if (hadSlider || wrappedScalar) {
+      mutated = true;
+      out.dataZoom = insideOnly.length > 0 ? insideOnly : [{ type: "inside" }];
     }
   }
 
