@@ -312,16 +312,20 @@ def build_option(
     *,
     title: str | None = None,
 ) -> dict[str, Any]:
-    """Build a complete ECharts ``option`` dict for ``chart_kind``."""
-    safe_title = (title or "").strip()
+    """Build a complete ECharts ``option`` dict for ``chart_kind``.
+
+    The ``title`` argument is intentionally not echoed into the canvas:
+    the HTML card header in ``echart-card.tsx`` already shows it with
+    truncation and metadata (row count, chart kind, "truncated" hint).
+    A duplicate in-canvas title would simply wrap on long Genie prompts
+    and crash into the toolbox icons. We accept it here for API-shape
+    parity (and so the caller can't forget to pass it) but only use it
+    for downstream side-effects such as PNG / CSV filename slugs.
+    """
+    del title  # captured by the caller for filename slugs only
     base: dict[str, Any] = {
         "color": list(_DEFAULT_PALETTE),
-        "title": (
-            {"text": safe_title, "left": "center", "top": 4, "textStyle": {"fontSize": 14}}
-            if safe_title
-            else {}
-        ),
-        "grid": {"left": 48, "right": 24, "top": 64, "bottom": 32, "containLabel": True},
+        "grid": {"left": 48, "right": 24, "top": 40, "bottom": 32, "containLabel": True},
         "toolbox": _common_toolbox(),
     }
 
@@ -349,7 +353,7 @@ def build_option(
         return {
             **base,
             "tooltip": {"trigger": "item", "confine": True},
-            "legend": {"orient": "horizontal", "top": 28, "left": "center"},
+            "legend": {"orient": "horizontal", "top": 8, "left": 8, "right": 80},
             "series": [
                 {
                     "type": "pie",
@@ -498,7 +502,7 @@ def _build_line_or_bar(
     return {
         **base,
         "tooltip": _common_tooltip(),
-        "legend": {"data": series_names, "orient": "horizontal", "top": 28, "left": "center"},
+        "legend": {"data": series_names, "orient": "horizontal", "top": 8, "left": 8, "right": 80},
         "xAxis": x_axis,
         "yAxis": {"type": "value"},
         "dataZoom": _data_zoom_inside_only(),

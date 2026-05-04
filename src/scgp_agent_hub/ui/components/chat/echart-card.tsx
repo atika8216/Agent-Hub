@@ -436,22 +436,30 @@ function ResultTable({
 // -- helpers --
 
 /*
- * Charts persisted before the bottom-strip fix had ``legend.top: "bottom"``
- * plus ``grid.bottom: 56``, which carved a short band under the plot that
- * read as a second mini-chart. A second, even older revision of the
- * backend also shipped ``dataZoom: [..., {"type": "slider"}]`` -- the
- * slider track renders a mini axis strip at the bottom of the chart and
- * is the same "second chart peeking" failure mode by another name. New
- * charts are built clean (legend at top, ``dataZoom`` inside-only -- see
- * ``chart_service.py``), but anything already stored in
- * ``chart_artifacts.option_json`` would otherwise keep the old layout on
- * reload. This pure function rewrites the option at the render boundary
- * so legacy and new charts produce the same visual result -- no DB
- * migration needed. Handles both the object form of ``legend`` /
- * ``dataZoom`` and their array forms.
+ * Charts persisted before the May 1 / May 4 layout passes carry one or
+ * more of the following legacy shapes that need to be neutralized at
+ * the render boundary so old and new charts look identical without a
+ * DB migration:
+ *
+ *   1. ``legend.top: "bottom"`` plus ``grid.bottom: 56`` (May 1 fix
+ *      moved the legend above the plot and shrank the bottom gutter).
+ *   2. ``dataZoom: [..., {"type": "slider"}]`` (the slider track paints
+ *      a mini axis strip at the bottom -- "second chart peeking").
+ *   3. ``title: {text: "..."}`` (May 4 fix dropped the in-canvas title
+ *      because the HTML card header already shows it; on long Genie
+ *      prompts the canvas title wraps onto the toolbox row).
+ *   4. ``legend.top: 28`` + ``grid.top: 64`` (May 1 layout, now lifted
+ *      to ``legend.top: 8`` + ``grid.top: 40`` since the canvas title
+ *      no longer reserves vertical space).
+ *
+ * This pure function rewrites the option dict so any ``option_json``
+ * already stored in ``chart_artifacts`` renders with the current
+ * layout. Handles both the object form of ``legend`` / ``dataZoom``
+ * and their array forms.
  *
  * Example legacy payload (now neutralized client-side):
- *   { legend: {top: "bottom"}, grid: {top: 48, bottom: 56},
+ *   { title: {text: "Total sales..."},
+ *     legend: {top: "bottom"}, grid: {top: 48, bottom: 56},
  *     dataZoom: [{type: "inside"}, {type: "slider", height: 16, bottom: 0}] }
  */
 function normalizeLegacyOption(option: unknown): unknown {
@@ -461,11 +469,34 @@ function normalizeLegacyOption(option: unknown): unknown {
   let mutated = false;
   const out: Record<string, unknown> = { ...src };
 
-  const rewriteLegend = (leg: Record<string, unknown>): Record<string, unknown> => {
-    if (leg.top === "bottom") {
+  // 1. Drop any in-canvas title -- the HTML card header already shows
+  //    it. We treat a non-empty ``title`` object (or array) as legacy
+  //    and replace it with an empty dict so ECharts skips rendering.
+  const title = src.title;
+  if (title !== undefined) {
+    const isEmptyObj =
+      title !== null &&
+      typeof title === "object" &&
+      !Array.isArray(title) &&
+      Object.keys(title as Record<string, unknown>).length === 0;
+    if (!isEmptyObj) {
       mutated = true;
-      const { top: _drop, ...rest } = leg;
-      return { ...rest, top: 28, left: "center", orient: "horizontal" };
+      out.title = {};
+    }
+  }
+
+  // 2. Lift the legend to the top rail (left-aligned, with right gutter
+  //    to keep clear of the toolbox icons). Covers both the May 1 shape
+  //    (top: 28, left: "center") and the original (top: "bottom").
+  //    ``rewriteLegend`` returns the input reference unchanged when no
+  //    rewrite is needed so the caller can detect a real mutation by
+  //    identity rather than a side-effect flag.
+  const rewriteLegend = (
+    leg: Record<string, unknown>,
+  ): Record<string, unknown> => {
+    if (leg.top === "bottom" || leg.top === 28) {
+      const { top: _t, left: _l, right: _r, ...rest } = leg;
+      return { ...rest, top: 8, left: 8, right: 80, orient: "horizontal" };
     }
     return leg;
   };
@@ -473,31 +504,47 @@ function normalizeLegacyOption(option: unknown): unknown {
   const legend = src.legend;
   if (legend && typeof legend === "object") {
     if (Array.isArray(legend)) {
-      const nextArr = (legend as unknown[]).map((entry) =>
-        entry && typeof entry === "object"
-          ? rewriteLegend(entry as Record<string, unknown>)
-          : entry,
-      );
-      if (mutated) out.legend = nextArr;
+      const arr = legend as unknown[];
+      let legendChanged = false;
+      const nextArr = arr.map((entry) => {
+        if (entry && typeof entry === "object") {
+          const next = rewriteLegend(entry as Record<string, unknown>);
+          if (next !== entry) legendChanged = true;
+          return next;
+        }
+        return entry;
+      });
+      if (legendChanged) {
+        mutated = true;
+        out.legend = nextArr;
+      }
     } else {
-      const nextLegend = rewriteLegend(legend as Record<string, unknown>);
-      if (mutated) out.legend = nextLegend;
+      const leg = legend as Record<string, unknown>;
+      const next = rewriteLegend(leg);
+      if (next !== leg) {
+        mutated = true;
+        out.legend = next;
+      }
     }
   }
 
+  // 3. Rebalance grid padding to match the new top rail (legend + tools)
+  //    and the now-empty bottom gutter. Recognize both the May 1 grid
+  //    (top: 64, bottom: 32) and the original (top: 48, bottom: 56).
   const grid = src.grid;
   if (grid && typeof grid === "object" && !Array.isArray(grid)) {
     const g = grid as Record<string, unknown>;
-    const needsGridFix = g.top === 48 || g.bottom === 56;
+    const needsGridFix =
+      g.top === 48 || g.top === 64 || g.bottom === 56;
     if (needsGridFix) {
       mutated = true;
-      out.grid = { ...g, top: 64, bottom: 32 };
+      out.grid = { ...g, top: 40, bottom: 32 };
     }
   }
 
-  // Drop any legacy ``slider`` (or other non-inside) dataZoom entries.
-  // The backend ships inside-only today; if a persisted option carries a
-  // slider, it paints the "second chart peeking" strip at the bottom.
+  // 4. Drop any legacy ``slider`` (or other non-inside) dataZoom entries.
+  //    The backend ships inside-only today; if a persisted option carries
+  //    a slider, it paints the "second chart peeking" strip at the bottom.
   const dataZoom = src.dataZoom;
   if (dataZoom !== undefined) {
     const entries = Array.isArray(dataZoom) ? dataZoom : [dataZoom];

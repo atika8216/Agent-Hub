@@ -468,12 +468,54 @@ class TestLegendPlacement:
         )
 
     def test_grid_reserves_room_at_top_not_bottom(self) -> None:
-        # The grid padding mirrors the legend move: more room at the top
-        # (title + legend), less at the bottom (x-axis labels only).
+        # The grid padding mirrors the legend move: just enough at the
+        # top for the legend rail (which now lives at top: 8 because the
+        # canvas title was dropped, so 40 px is enough), no dead space
+        # at the bottom (32 px covers x-axis tick labels with
+        # ``containLabel: True``).
         cols = [_col("region", "STRING"), _col("revenue", "BIGINT")]
         rows = [["A", 1], ["B", 2]]
         opt = cs.build_option("bar", cols, rows)
         grid = opt.get("grid")
         assert isinstance(grid, dict)
-        assert grid.get("top") == 64
+        assert grid.get("top") == 40
         assert grid.get("bottom") == 32
+
+    def test_legend_anchored_at_top_8(self) -> None:
+        # Legend lives at top: 8 with a right gutter so it never crashes
+        # into the toolbox icons (top: 8, right: 16).
+        cols = [_col("seg", "STRING"), _col("share", "DOUBLE")]
+        rows = [["A", 0.4], ["B", 0.6]]
+        opt = cs.build_option("pie", cols, rows)
+        legend = opt.get("legend")
+        assert isinstance(legend, dict)
+        assert legend.get("top") == 8
+        assert legend.get("right") == 80, (
+            "legend must reserve a right gutter so wide multi-series "
+            "labels don't crash into the toolbox icons"
+        )
+
+    @pytest.mark.parametrize("kind", ["bar", "line", "pie", "scatter", "table"])
+    def test_no_in_canvas_title(self, kind: str) -> None:
+        # The HTML card header in echart-card.tsx already shows the
+        # title with truncation + metadata. A second in-canvas title
+        # wraps onto the toolbox row on long Genie prompts and creates
+        # a layout collision. ``build_option`` therefore must not echo
+        # the title back into the option payload, regardless of kind.
+        if kind == "scatter":
+            cols = [_col("x", "DOUBLE"), _col("y", "DOUBLE")]
+            rows = [[1, 2], [3, 4]]
+        elif kind == "pie":
+            cols = [_col("seg", "STRING"), _col("share", "DOUBLE")]
+            rows = [["A", 0.4], ["B", 0.6]]
+        else:
+            cols = [_col("region", "STRING"), _col("revenue", "BIGINT")]
+            rows = [["A", 1], ["B", 2]]
+        long_title = "Total sales by region (province), including the " * 5
+        opt = cs.build_option(kind, cols, rows, title=long_title)  # type: ignore[arg-type]
+        # Either absent or the empty-dict sentinel are acceptable; the
+        # critical contract is that ECharts has no text to render.
+        title = opt.get("title", {})
+        assert title == {} or title is None, (
+            f"{kind} unexpectedly echoed title into option: {title!r}"
+        )
