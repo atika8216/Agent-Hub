@@ -485,12 +485,19 @@ function normalizeLegacyOption(option: unknown): unknown {
     }
   }
 
-  // 2. Lift the legend to the top rail (left-aligned, with right gutter
-  //    to keep clear of the toolbox icons). Covers both the May 1 shape
-  //    (top: 28, left: "center") and the original (top: "bottom").
-  //    ``rewriteLegend`` returns the input reference unchanged when no
-  //    rewrite is needed so the caller can detect a real mutation by
-  //    identity rather than a side-effect flag.
+  // 2. Drop legacy single-item legends, otherwise lift the legend to
+  //    the top rail. Single-series line/bar charts persisted before
+  //    the May 1 backend fix shipped both ``legend: {data: ["yname"]}``
+  //    AND ``yAxis: {name: "yname"}``. After lifting the legend to
+  //    ``top: 8, left: 8`` the legend label collides head-on with the
+  //    y-axis name (also rendered at the top-left), producing the
+  //    "Total (Sales Sales)(THB)" doubled-text glitch. The new backend
+  //    convention is to skip the legend entirely for single-series so
+  //    only the y-axis name is shown -- mirror that for legacy charts
+  //    by deleting any one-item legend at the normalizer boundary.
+  //    Pie legacy options omit ``legend.data`` (ECharts auto-derives
+  //    from slice names), so the length check naturally leaves them
+  //    alone. Multi-series legends with 2+ items keep getting lifted.
   const rewriteLegend = (
     leg: Record<string, unknown>,
   ): Record<string, unknown> => {
@@ -500,30 +507,50 @@ function normalizeLegacyOption(option: unknown): unknown {
     }
     return leg;
   };
+  const isSingleItemLegend = (leg: Record<string, unknown>): boolean => {
+    const data = leg.data;
+    return Array.isArray(data) && data.length === 1;
+  };
 
   const legend = src.legend;
   if (legend && typeof legend === "object") {
     if (Array.isArray(legend)) {
       const arr = legend as unknown[];
       let legendChanged = false;
-      const nextArr = arr.map((entry) => {
-        if (entry && typeof entry === "object") {
-          const next = rewriteLegend(entry as Record<string, unknown>);
-          if (next !== entry) legendChanged = true;
-          return next;
-        }
-        return entry;
-      });
+      const nextArr = arr
+        .map((entry) => {
+          if (entry && typeof entry === "object") {
+            const obj = entry as Record<string, unknown>;
+            if (isSingleItemLegend(obj)) {
+              legendChanged = true;
+              return null;
+            }
+            const next = rewriteLegend(obj);
+            if (next !== obj) legendChanged = true;
+            return next;
+          }
+          return entry;
+        })
+        .filter((e) => e !== null);
       if (legendChanged) {
         mutated = true;
-        out.legend = nextArr;
+        if (nextArr.length === 0) {
+          delete out.legend;
+        } else {
+          out.legend = nextArr;
+        }
       }
     } else {
       const leg = legend as Record<string, unknown>;
-      const next = rewriteLegend(leg);
-      if (next !== leg) {
+      if (isSingleItemLegend(leg)) {
         mutated = true;
-        out.legend = next;
+        delete out.legend;
+      } else {
+        const next = rewriteLegend(leg);
+        if (next !== leg) {
+          mutated = true;
+          out.legend = next;
+        }
       }
     }
   }

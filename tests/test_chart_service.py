@@ -467,6 +467,23 @@ class TestLegendPlacement:
             f"{kind} with one numeric column should not ship a legend"
         )
 
+    @pytest.mark.parametrize("kind", ["bar", "line"])
+    def test_single_series_keeps_y_axis_name(self, kind: str) -> None:
+        # The frontend normalizer drops legacy single-item legends to
+        # avoid them colliding with the y-axis name at the top-left.
+        # This test locks the contract the normalizer relies on:
+        # single-series line/bar must show the y-axis name (so dropping
+        # the legend leaves the chart self-describing).
+        cols = [_col("region", "STRING"), _col("revenue", "BIGINT")]
+        rows = [["West", 1000], ["East", 800]]
+        opt = cs.build_option(kind, cols, rows)  # type: ignore[arg-type]
+        y_axis = opt.get("yAxis")
+        assert isinstance(y_axis, dict), f"{kind} missing yAxis"
+        assert y_axis.get("name") == "revenue", (
+            f"{kind} y-axis must carry the column name so a chart with "
+            f"no legend stays readable; got {y_axis!r}"
+        )
+
     def test_grid_reserves_room_at_top_not_bottom(self) -> None:
         # The grid padding mirrors the legend move: just enough at the
         # top for the legend rail (which now lives at top: 8 because the
