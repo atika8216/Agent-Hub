@@ -9,8 +9,8 @@ hidden (since they are building blocks, not agents).
 
 from __future__ import annotations
 
-from scgp_agent_hub.backend.models import AgentType
-from scgp_agent_hub.backend.services.catalog_service import _default_visible_for
+from agent_hub.backend.models import AgentType
+from agent_hub.backend.services.catalog_service import _default_visible_for
 
 
 class TestDefaultVisibility:

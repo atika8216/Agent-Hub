@@ -100,7 +100,7 @@ user_authorization:
         text = """
 resources:
   apps:
-    scgp_agent_hub:
+    agent_hub:
       source_code_path: .
       user_api_scopes:
         - serving.serving-endpoints
@@ -109,7 +109,7 @@ resources:
 """
         got = check_scopes._extract_list_under_key(
             text,
-            ["resources", "apps", "scgp_agent_hub", "user_api_scopes"],
+            ["resources", "apps", "agent_hub", "user_api_scopes"],
         )
         assert got == [
             "serving.serving-endpoints",

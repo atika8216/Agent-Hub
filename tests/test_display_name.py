@@ -7,7 +7,7 @@ Bricks Tiles API is unreachable (F3 platform gap).
 
 from __future__ import annotations
 
-from scgp_agent_hub.backend.services.catalog_service import (
+from agent_hub.backend.services.catalog_service import (
     _derive_display_name,
     _smart_title,
 )

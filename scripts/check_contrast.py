@@ -31,7 +31,7 @@ from typing import Iterable
 CSS_PATH = (
     Path(__file__).resolve().parent.parent
     / "src"
-    / "scgp_agent_hub"
+    / "agent_hub"
     / "ui"
     / "styles"
     / "globals.css"

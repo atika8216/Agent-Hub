@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from scgp_agent_hub.backend.services import feature_flags_service as ff
+from agent_hub.backend.services import feature_flags_service as ff
 
 
 # --------------------------------------------------------------------------- #

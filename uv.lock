@@ -880,7 +880,7 @@ wheels = [
 ]
 
 [[package]]
-name = "scgp-agent-hub"
+name = "agent-hub"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

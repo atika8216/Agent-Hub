@@ -1,7 +1,7 @@
 [project]
-name = "scgp-agent-hub"
+name = "agent-hub"
 version = "0.1.0"
-description = "SCGP Agent Chat Hub - Multi-agent catalog with chat and memory"
+description = "Agent Chat Hub - Multi-agent catalog with chat and memory"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -23,22 +23,22 @@ dev = [
 ]
 
 [tool.apx.metadata]
-app-name = "scgp-agent-hub"
-app-slug = "scgp_agent_hub"
-app-entrypoint = "scgp_agent_hub.backend.app:app"
+app-name = "agent-hub"
+app-slug = "agent_hub"
+app-entrypoint = "agent_hub.backend.app:app"
 api-prefix = "/api/v1"
-metadata-path = "src/scgp_agent_hub/_metadata.py"
+metadata-path = "src/agent_hub/_metadata.py"
 
 [tool.apx.ui]
-root = "src/scgp_agent_hub/ui"
+root = "src/agent_hub/ui"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build]
-artifacts = ["src/scgp_agent_hub/__dist__", "src/scgp_agent_hub/_metadata.py"]
-exclude = ["src/scgp_agent_hub/ui"]
+artifacts = ["src/agent_hub/__dist__", "src/agent_hub/_metadata.py"]
+exclude = ["src/agent_hub/ui"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

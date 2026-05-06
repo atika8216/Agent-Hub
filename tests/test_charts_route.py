@@ -29,9 +29,9 @@ from typing import Any
 
 import pytest
 
-from scgp_agent_hub.backend import router as router_mod
-from scgp_agent_hub.backend.router import list_message_charts
-from scgp_agent_hub.backend.services.base import NotFoundError
+from agent_hub.backend import router as router_mod
+from agent_hub.backend.router import list_message_charts
+from agent_hub.backend.services.base import NotFoundError
 
 
 def _fake_request(user_email: str = "atika@example.com") -> Any:

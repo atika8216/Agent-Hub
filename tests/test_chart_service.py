@@ -24,7 +24,7 @@ from typing import Any
 
 import pytest
 
-from scgp_agent_hub.backend.services import chart_service as cs
+from agent_hub.backend.services import chart_service as cs
 
 
 # --------------------------------------------------------------------------- #

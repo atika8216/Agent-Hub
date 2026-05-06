@@ -1,4 +1,4 @@
-"""Render the SCGP Agent Hub diagrams to high-resolution PNGs.
+"""Render the Agent Hub diagrams to high-resolution PNGs.
 
 Run from the repo root:
     python docs/diagrams/_export.py
@@ -16,13 +16,13 @@ DIAGRAMS_DIR = Path(__file__).resolve().parent
 
 JOBS = [
     {
-        "html": "scgp-agent-hub-architecture.html",
-        "base": "scgp-agent-hub-architecture",
+        "html": "agent-hub-architecture.html",
+        "base": "agent-hub-architecture",
         "viewport": (1480, 980),
     },
     {
-        "html": "scgp-agent-hub-journey.html",
-        "base": "scgp-agent-hub-journey",
+        "html": "agent-hub-journey.html",
+        "base": "agent-hub-journey",
         "viewport": (1600, 1060),
     },
 ]

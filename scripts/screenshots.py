@@ -110,7 +110,7 @@ async def _capture(options: Options) -> None:
                     # Seed the theme through localStorage so ThemeProvider
                     # doesn't flash the opposite palette before hydrating.
                     await context.add_init_script(
-                        f"window.localStorage.setItem('scgp-theme', '{theme}');"
+                        f"window.localStorage.setItem('agent-hub-theme', '{theme}');"
                     )
 
                     page = await context.new_page()
@@ -136,8 +136,8 @@ def parse_args(argv: list[str]) -> Options:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--base-url",
-        default=os.environ.get("SCGP_APP_URL", "http://localhost:8000"),
-        help="Root URL of the running app (default: SCGP_APP_URL env or localhost:8000)",
+        default=os.environ.get("AGENT_HUB_APP_URL", "http://localhost:8000"),
+        help="Root URL of the running app (default: AGENT_HUB_APP_URL env or localhost:8000)",
     )
     parser.add_argument(
         "--out-dir",
@@ -147,12 +147,12 @@ def parse_args(argv: list[str]) -> Options:
     )
     parser.add_argument(
         "--cookie",
-        default=os.environ.get("SCGP_APP_COOKIE"),
+        default=os.environ.get("AGENT_HUB_APP_COOKIE"),
         help="Raw Cookie header for authenticated Databricks App captures",
     )
     parser.add_argument(
         "--theme-cookie-name",
-        default="scgp-theme",
+        default="agent-hub-theme",
         help="LocalStorage key used by ThemeProvider (rarely needs changing)",
     )
     ns = parser.parse_args(argv)

@@ -8,7 +8,7 @@
 
 ## Step 4.1: Memory Service
 
-Create `src/scgp_agent_hub/backend/services/memory_service.py`.
+Create `src/agent_hub/backend/services/memory_service.py`.
 
 ### Short-Term Memory
 

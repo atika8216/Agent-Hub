@@ -99,7 +99,7 @@ The mockups are layout/concept references; actual fonts come from Fontshare CDN.
 
 ## Stitch Project Reference (v2 -- Observatory)
 
-- Project: "SCGP Agent Hub v2 -- Observatory"
+- Project: "Agent Hub v2 -- Observatory"
 - Project ID: `10483141641832095383`
 - Base Design System Asset: `assets/15441572755616268220` ("The Observatory")
 

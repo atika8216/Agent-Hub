@@ -24,7 +24,7 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 
-from scgp_agent_hub.backend.services import chat_service
+from agent_hub.backend.services import chat_service
 
 
 # --------------------------------------------------------------------------- #
@@ -426,7 +426,7 @@ def test_stream_chat_emits_started_then_tokens_then_done(monkeypatch: Any) -> No
 def test_stream_chat_emits_error_envelope_when_preflight_fails(
     monkeypatch: Any,
 ) -> None:
-    from scgp_agent_hub.backend.services.base import ForbiddenError
+    from agent_hub.backend.services.base import ForbiddenError
 
     monkeypatch.setattr(
         chat_service,
@@ -543,7 +543,7 @@ def test_post_stream_sets_accept_sse(monkeypatch: Any) -> None:
         history=[{"role": "user", "content": "hi"}],
     )
     # Make sure we don't leak the fake client back to the pool -- it has
-    # no _scgp_client attribute hookup we care about here.
+    # no _agent_hub_client attribute hookup we care about here.
     chat_service._close_stream(resp)  # type: ignore[arg-type]
 
     assert captured["headers"].get("Accept") == "text/event-stream"
@@ -885,9 +885,9 @@ def _stub_stream_chat_io(monkeypatch: Any) -> None:
 
 
 def test_stream_chat_uc_kill_switch_emits_stub(monkeypatch: Any) -> None:
-    """Setting SCGP_DISABLE_UC_MCP_CHAT=1 reverts uc:* to the Phase-1 stub."""
+    """Setting AGENT_HUB_DISABLE_UC_MCP_CHAT=1 reverts uc:* to the Phase-1 stub."""
     _stub_stream_chat_io(monkeypatch)
-    monkeypatch.setenv("SCGP_DISABLE_UC_MCP_CHAT", "1")
+    monkeypatch.setenv("AGENT_HUB_DISABLE_UC_MCP_CHAT", "1")
 
     # Neither the MAS path nor the new HTTP invoker should be reached.
     monkeypatch.setattr(
@@ -921,13 +921,13 @@ def test_stream_chat_uc_kill_switch_emits_stub(monkeypatch: Any) -> None:
     assert parsed[-1]["type"] == "done"
     assert "main.sales.ask_agent" in body
     assert "HTTP connection" in body
-    assert "SCGP_DISABLE_UC_MCP_CHAT" in body
+    assert "AGENT_HUB_DISABLE_UC_MCP_CHAT" in body
 
 
 def test_stream_chat_mcp_kill_switch_emits_stub(monkeypatch: Any) -> None:
-    """Setting SCGP_DISABLE_UC_MCP_CHAT=1 reverts mcp:* to the Phase-1 stub."""
+    """Setting AGENT_HUB_DISABLE_UC_MCP_CHAT=1 reverts mcp:* to the Phase-1 stub."""
     _stub_stream_chat_io(monkeypatch)
-    monkeypatch.setenv("SCGP_DISABLE_UC_MCP_CHAT", "1")
+    monkeypatch.setenv("AGENT_HUB_DISABLE_UC_MCP_CHAT", "1")
 
     monkeypatch.setattr(
         chat_service,
@@ -965,7 +965,7 @@ def test_stream_chat_mcp_kill_switch_emits_stub(monkeypatch: Any) -> None:
 def test_stream_chat_uc_dispatches_to_http_invoker(monkeypatch: Any) -> None:
     """Without the kill switch, uc:* endpoints go through _stream_http_connection."""
     _stub_stream_chat_io(monkeypatch)
-    monkeypatch.delenv("SCGP_DISABLE_UC_MCP_CHAT", raising=False)
+    monkeypatch.delenv("AGENT_HUB_DISABLE_UC_MCP_CHAT", raising=False)
 
     monkeypatch.setattr(
         chat_service,
@@ -1014,7 +1014,7 @@ def test_stream_chat_uc_dispatches_to_http_invoker(monkeypatch: Any) -> None:
 def test_stream_chat_mcp_dispatches_to_mcp_invoker(monkeypatch: Any) -> None:
     """Without the kill switch, mcp:* endpoints go through _stream_mcp."""
     _stub_stream_chat_io(monkeypatch)
-    monkeypatch.delenv("SCGP_DISABLE_UC_MCP_CHAT", raising=False)
+    monkeypatch.delenv("AGENT_HUB_DISABLE_UC_MCP_CHAT", raising=False)
 
     called: dict[str, Any] = {}
 

@@ -140,7 +140,7 @@ def read_bundle_yaml_scopes(path: Path = BUNDLE_YAML) -> list[str]:
     text = path.read_text(encoding="utf-8")
     return _extract_list_under_key(
         text,
-        ["resources", "apps", "scgp_agent_hub", "user_api_scopes"],
+        ["resources", "apps", "agent_hub", "user_api_scopes"],
     )
 
 

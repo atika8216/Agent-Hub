@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agent Hub App Journey</title>
+  <style>
+    :root {
+      --coral: #ff5c39;
+      --coral-dark: #d93f21;
+      --navy: #1b3139;
+      --navy-soft: #2a4750;
+      --blue: #0a84ff;
+      --mint: #00a972;
+      --amber: #ff9900;
+      --paper: #fbfaf7;
+      --canvas: #f4f0ea;
+      --surface: #fffdf8;
+      --surface-2: #f7f4ef;
+      --line: #ded8cf;
+      --line-strong: #c8beb1;
+      --text: #1b3139;
+      --muted: #5a6f7c;
+      --muted-2: #7f8f98;
+      --shadow: 0 18px 50px rgba(41, 33, 24, 0.11);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 28px;
+      background:
+        radial-gradient(circle at 96% 2%, rgba(10, 132, 255, 0.1), transparent 32%),
+        linear-gradient(180deg, var(--canvas), #eee7dd);
+      color: var(--text);
+    }
+
+    .page {
+      width: 1540px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 34px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      padding: 26px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr 355px;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(10, 132, 255, 0.22);
+      border-radius: 999px;
+      background: rgba(10, 132, 255, 0.08);
+      color: #096ed6;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 12px 0 7px;
+      max-width: 930px;
+      font-size: 34px;
+      line-height: 1.04;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      max-width: 960px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.46;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--surface);
+      padding: 14px;
+    }
+
+    .summary div {
+      display: grid;
+      gap: 4px;
+      border-radius: 14px;
+      background: var(--surface-2);
+      padding: 10px;
+    }
+
+    .summary b {
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    .summary span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.34;
+    }
+
+    .journey {
+      border: 3px solid var(--coral);
+      border-radius: 24px;
+      background: var(--surface);
+      padding: 0 14px 14px;
+    }
+
+    .journey-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 0 -14px 12px;
+      border-radius: 18px 18px 0 0;
+      background: var(--coral);
+      color: #fff8f4;
+      padding: 13px 18px;
+      font-weight: 800;
+    }
+
+    .journey-title span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .journey-title small {
+      color: rgba(255, 248, 244, 0.78);
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .map {
+      display: grid;
+      grid-template-columns: 122px repeat(8, 1fr);
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .corner {
+      border-radius: 15px;
+      background: var(--navy);
+      color: #f6f7f4;
+      padding: 12px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .stage {
+      display: grid;
+      gap: 5px;
+      align-content: start;
+      min-height: 78px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--surface-2);
+      padding: 10px;
+    }
+
+    .stage .num {
+      display: grid;
+      width: 23px;
+      height: 23px;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--coral);
+      color: #fff8f4;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .stage b {
+      font-size: 13px;
+      line-height: 1.08;
+    }
+
+    .stage span {
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.26;
+    }
+
+    .lane-label {
+      display: flex;
+      min-height: 112px;
+      align-items: center;
+      gap: 8px;
+      border-radius: 15px;
+      background: var(--navy);
+      color: #f6f7f4;
+      padding: 12px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .lane-label svg {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 auto;
+    }
+
+    .cell {
+      position: relative;
+      display: grid;
+      min-height: 112px;
+      align-content: start;
+      gap: 7px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--surface);
+      padding: 10px;
+    }
+
+    .cell.flow:not(.last)::after {
+      content: ">";
+      position: absolute;
+      right: -13px;
+      top: 44px;
+      width: 17px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      color: var(--coral);
+      font-weight: 900;
+      z-index: 2;
+    }
+
+    .cell strong {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.16;
+    }
+
+    .cell p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 10.5px;
+      line-height: 1.36;
+    }
+
+    .cell code {
+      border: 1px solid rgba(27, 49, 57, 0.1);
+      border-radius: 7px;
+      background: rgba(27, 49, 57, 0.04);
+      color: var(--text);
+      padding: 1px 4px;
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 9.5px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .pill {
+      border: 1px solid rgba(27, 49, 57, 0.1);
+      border-radius: 999px;
+      background: rgba(27, 49, 57, 0.05);
+      color: var(--muted);
+      padding: 4px 6px;
+      font-size: 9.5px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .blue strong svg,
+    .blue .accent {
+      color: var(--blue);
+    }
+
+    .mint strong svg,
+    .mint .accent {
+      color: var(--mint);
+    }
+
+    .amber strong svg,
+    .amber .accent {
+      color: var(--amber);
+    }
+
+    .coral strong svg,
+    .coral .accent {
+      color: var(--coral-dark);
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      color: currentColor;
+    }
+
+    .event-band {
+      display: grid;
+      grid-template-columns: 145px repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+      border-radius: 18px;
+      background: var(--navy);
+      padding: 12px;
+      color: #f6f7f4;
+    }
+
+    .event-label {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 10px;
+      color: #fff8f4;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .event {
+      position: relative;
+      display: grid;
+      gap: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 10px;
+    }
+
+    .event:not(:last-child)::after {
+      content: "->";
+      position: absolute;
+      right: -17px;
+      top: 34px;
+      color: rgba(246, 247, 244, 0.7);
+      font-weight: 800;
+    }
+
+    .event b {
+      color: #fff8f4;
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 11px;
+    }
+
+    .event small {
+      color: rgba(246, 247, 244, 0.72);
+      font-size: 10px;
+      line-height: 1.3;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      border-radius: 18px;
+      background: var(--coral);
+      color: #fff8f4;
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .legend .items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .legend b {
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      padding: 6px 9px;
+    }
+  </style>
+</head>
+<body>
+  <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+    <symbol id="ic-user" viewBox="0 0 24 24">
+      <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/>
+      <path d="M4 20c0-4.2 3.6-7 8-7s8 2.8 8 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="ic-ui" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="16" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M3 9h18M8 4v16" fill="none" stroke="currentColor" stroke-width="1.3"/>
+    </symbol>
+    <symbol id="ic-api" viewBox="0 0 24 24">
+      <path d="M8 8l-4 4 4 4M16 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M14 5l-4 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="ic-db" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="6" rx="7.5" ry="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M4.5 6v11c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M4.5 11.5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3" fill="none" stroke="currentColor" stroke-width="1.3"/>
+    </symbol>
+    <symbol id="ic-cloud" viewBox="0 0 24 24">
+      <path d="M8 18h9a4 4 0 00.5-8 6 6 0 00-11.2 1.4A3.5 3.5 0 008 18z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-admin" viewBox="0 0 24 24">
+      <path d="M12 2l7 3v5c0 5.1-3.2 9.8-7 11-3.8-1.2-7-5.9-7-11V5l7-3z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M9.2 12.2l1.9 1.9 4-4.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-chat" viewBox="0 0 24 24">
+      <path d="M5 5h14a2 2 0 012 2v8a2 2 0 01-2 2h-7l-5 4v-4H5a2 2 0 01-2-2V7a2 2 0 012-2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M7 9h10M7 13h6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="ic-chart" viewBox="0 0 24 24">
+      <path d="M4 20h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      <rect x="6" y="11" width="3" height="6" rx="1" fill="currentColor"/>
+      <rect x="11" y="7" width="3" height="10" rx="1" fill="currentColor"/>
+      <rect x="16" y="4" width="3" height="13" rx="1" fill="currentColor"/>
+    </symbol>
+    <symbol id="ic-spark" viewBox="0 0 24 24">
+      <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    </symbol>
+  </svg>
+
+  <main class="page">
+    <header>
+      <div>
+        <div class="eyebrow"><svg class="icon"><use href="#ic-chat"/></svg> App journey</div>
+        <h1>From Agent Discovery to Streamed Answer</h1>
+        <p class="subtitle">
+          The primary product journey moves from a governed agent catalog into a persistent,
+          streaming chat session. Under the surface, the UI updates optimistically, FastAPI
+          persists state in Lakebase, and Databricks APIs perform access checks, agent calls,
+          SQL execution, Genie polling, and MCP/tool orchestration.
+        </p>
+      </div>
+      <aside class="summary">
+        <div><b>Primary user</b><span>Internal employee searching for the right AI agent and asking follow-up questions.</span></div>
+        <div><b>Admin path</b><span>Catalog, feature flags, memory mode, tag config, and endpoint visibility controls.</span></div>
+        <div><b>State anchor</b><span>Lakebase keeps conversations, messages, chart artifacts, suggestions, pins, and prefs.</span></div>
+        <div><b>Stream anchor</b><span>SSE events keep the chat page responsive while backend calls continue.</span></div>
+      </aside>
+    </header>
+
+    <section class="journey">
+      <div class="journey-title">
+        <span><svg class="icon"><use href="#ic-spark"/></svg> End-to-end journey map</span>
+        <small>Human path + frontend + backend + Databricks</small>
+      </div>
+
+      <div class="map" aria-label="Agent Hub app journey swimlanes">
+        <div class="corner">Lane</div>
+        <div class="stage"><span class="num">1</span><b>Boot</b><span>Open app and resolve context</span></div>
+        <div class="stage"><span class="num">2</span><b>Discover</b><span>Browse catalog and filter agents</span></div>
+        <div class="stage"><span class="num">3</span><b>Decide</b><span>Inspect agent and access</span></div>
+        <div class="stage"><span class="num">4</span><b>Ask</b><span>Start or continue chat</span></div>
+        <div class="stage"><span class="num">5</span><b>Stream</b><span>Receive answer events</span></div>
+        <div class="stage"><span class="num">6</span><b>Enrich</b><span>Charts, tools, suggestions</span></div>
+        <div class="stage"><span class="num">7</span><b>Resume</b><span>Rehydrate and iterate</span></div>
+        <div class="stage"><span class="num">8</span><b>Govern</b><span>Admin controls and rollout</span></div>
+
+        <div class="lane-label"><svg><use href="#ic-user"/></svg> User</div>
+        <div class="cell flow blue"><strong><svg class="icon"><use href="#ic-user"/></svg>Open hub</strong><p>Lands in the app shell with system theme, sidebar or mobile tab bar, and current user identity.</p></div>
+        <div class="cell flow blue"><strong><svg class="icon"><use href="#ic-spark"/></svg>Find an agent</strong><p>Searches, filters by type, scans descriptions, and checks which agents are available.</p></div>
+        <div class="cell flow blue"><strong><svg class="icon"><use href="#ic-admin"/></svg>Check fit</strong><p>Opens details to understand sub-agents, owner, access state, and starting point.</p></div>
+        <div class="cell flow coral"><strong><svg class="icon"><use href="#ic-chat"/></svg>Ask question</strong><p>Types a prompt or uses a pinned starter question in the selected agent chat.</p></div>
+        <div class="cell flow coral"><strong><svg class="icon"><use href="#ic-chat"/></svg>Watch answer</strong><p>Sees status labels, streaming text, tool progress, errors, retry affordances, and stop control.</p></div>
+        <div class="cell flow amber"><strong><svg class="icon"><use href="#ic-chart"/></svg>Use output</strong><p>Reads markdown, inspects charts, switches to table, downloads CSV, or taps suggestion chips.</p></div>
+        <div class="cell flow mint"><strong><svg class="icon"><use href="#ic-chat"/></svg>Return later</strong><p>Resumes a thread from the conversation rail and continues with prior context.</p></div>
+        <div class="cell last mint"><strong><svg class="icon"><use href="#ic-admin"/></svg>Admin only</strong><p>Configures discovery, visibility, feature flags, memory, tags, and manual endpoints.</p></div>
+
+        <div class="lane-label"><svg><use href="#ic-ui"/></svg> React UI</div>
+        <div class="cell flow blue"><strong><svg class="icon"><use href="#ic-ui"/></svg>Hydrate shell</strong><p>Loads <code>/app/config</code>, <code>/me</code>, user prefs, feature flags, and layout navigation.</p></div>
+        <div class="cell flow blue"><strong><svg class="icon"><use href="#ic-ui"/></svg>Catalog route</strong><p><code>/catalog</code> renders agent cards, type filters, search, empty states, and Genie cards.</p></div>
+        <div class="cell flow blue"><strong><svg class="icon"><use href="#ic-ui"/></svg>Agent detail</strong><p><code>/catalog/$agentId</code> calls agent detail and access hooks, then links to chat.</p></div>
+        <div class="cell flow coral"><strong><svg class="icon"><use href="#ic-chat"/></svg>useChat()</strong><p>Adds the user message immediately, starts local streaming state, and posts to the chat endpoint.</p></div>
+        <div class="cell flow coral"><strong><svg class="icon"><use href="#ic-chat"/></svg>SSE parser</strong><p>Reads <code>data:</code> lines, extracts Genie statuses, appends tokens, and updates URL/sidebar on <code>started</code>.</p></div>
+        <div class="cell flow amber"><strong><svg class="icon"><use href="#ic-chart"/></svg>Render enrichments</strong><p>Message bubble mounts tool blocks, chart hydrator, EChart cards, and suggestion chips.</p></div>
+        <div class="cell flow mint"><strong><svg class="icon"><use href="#ic-ui"/></svg>Reload path</strong><p>Conversation route populates the store, lazy-loads charts/suggestions, and keeps the scroll anchor pinned.</p></div>
+        <div class="cell last mint"><strong><svg class="icon"><use href="#ic-admin"/></svg>Admin routes</strong><p><code>/admin/catalog</code> and <code>/admin/settings</code> manage feature and catalog surfaces.</p></div>
+
+        <div class="lane-label"><svg><use href="#ic-api"/></svg> FastAPI</div>
+        <div class="cell flow blue"><strong><svg class="icon"><use href="#ic-api"/></svg>Resolve context</strong><p>Middleware applies request tracing, timeout, security headers, rate limit, CORS, gzip, and versioning.</p></div>
+        <div class="cell flow blue"><strong><svg class="icon"><use href="#ic-api"/></svg>List catalog</strong><p>Router delegates agent, Genie, and catalog config requests to typed service functions.</p></div>
+        <div class="cell flow blue"><strong><svg class="icon"><use href="#ic-api"/></svg>Access probe</strong><p>Checks user permissions, owner fallback, sub-agent visibility, and feature availability.</p></div>
+        <div class="cell flow coral"><strong><svg class="icon"><use href="#ic-api"/></svg>Chat preflight</strong><p><code>POST /chat/{endpoint}</code> ensures conversation, persists the user message, emits <code>started</code>.</p></div>
+        <div class="cell flow coral"><strong><svg class="icon"><use href="#ic-api"/></svg>Dispatch stream</strong><p><code>chat_service</code> routes by endpoint prefix/type: serving, Genie, UC HTTP, or MCP.</p></div>
+        <div class="cell flow amber"><strong><svg class="icon"><use href="#ic-chart"/></svg>Persist output</strong><p>Assistant message, chart artifacts, suggestions, tool events, and conversation title/touch are saved.</p></div>
+        <div class="cell flow mint"><strong><svg class="icon"><use href="#ic-api"/></svg>Rehydrate APIs</strong><p><code>/conversations</code>, <code>/messages/{id}/charts</code>, and <code>/messages/{id}/suggestions</code> rebuild the UI.</p></div>
+        <div class="cell last mint"><strong><svg class="icon"><use href="#ic-admin"/></svg>Admin APIs</strong><p>Discovery, rescan, manual UC endpoints, tag config, feature flags, and memory mode endpoints.</p></div>
+
+        <div class="lane-label"><svg><use href="#ic-db"/></svg> Lakebase</div>
+        <div class="cell flow mint"><strong><svg class="icon"><use href="#ic-db"/></svg>Prefs + flags</strong><p><code>user_prefs</code>, <code>admin_settings</code>, and <code>user_roles</code> shape the shell and permissions.</p></div>
+        <div class="cell flow mint"><strong><svg class="icon"><use href="#ic-db"/></svg>Catalog cache</strong><p><code>catalog_config</code> stores display names, descriptions, visibility, owners, type, and metadata.</p></div>
+        <div class="cell flow mint"><strong><svg class="icon"><use href="#ic-db"/></svg>Access state</strong><p>Owner email and metadata support fallback access and route-specific display behavior.</p></div>
+        <div class="cell flow coral"><strong><svg class="icon"><use href="#ic-db"/></svg>Conversation row</strong><p><code>conversations</code> and <code>messages</code> store the internal thread and first user turn.</p></div>
+        <div class="cell flow coral"><strong><svg class="icon"><use href="#ic-db"/></svg>Context memory</strong><p><code>memory_long_term</code> and recent messages can be assembled into agent context.</p></div>
+        <div class="cell flow amber"><strong><svg class="icon"><use href="#ic-chart"/></svg>Enrichment tables</strong><p><code>chart_artifacts</code>, <code>suggestions_cache</code>, and pin event records support durable reloads.</p></div>
+        <div class="cell flow mint"><strong><svg class="icon"><use href="#ic-db"/></svg>Conversation list</strong><p>Updated timestamps and previews rebuild the sidebar and recent-conversation index.</p></div>
+        <div class="cell last mint"><strong><svg class="icon"><use href="#ic-db"/></svg>Rollout controls</strong><p>Feature flags and memory settings are data flips, not code redeploys.</p></div>
+
+        <div class="lane-label"><svg><use href="#ic-cloud"/></svg> Databricks</div>
+        <div class="cell flow mint"><strong><svg class="icon"><use href="#ic-cloud"/></svg>Apps runtime</strong><p>Serves the Vite build and FastAPI app with declared OBO scopes, health checks, and env vars.</p></div>
+        <div class="cell flow blue"><strong><svg class="icon"><use href="#ic-spark"/></svg>Discovery APIs</strong><p>Tiles, serving endpoints, Genie Spaces, UC tags, function tags, and connection metadata.</p></div>
+        <div class="cell flow blue"><strong><svg class="icon"><use href="#ic-admin"/></svg>Permission APIs</strong><p>OBO WorkspaceClient probes serving endpoints and Genie access, with owner fallback where needed.</p></div>
+        <div class="cell flow coral"><strong><svg class="icon"><use href="#ic-spark"/></svg>Agent call</strong><p>Model Serving/MAS/KA invocation, Genie conversation API, UC HTTP connection, or MCP tool call.</p></div>
+        <div class="cell flow coral"><strong><svg class="icon"><use href="#ic-cloud"/></svg>Execution plane</strong><p>Genie polls status, SQL Warehouse runs queries, MCP tools return observations, serving streams text.</p></div>
+        <div class="cell flow amber"><strong><svg class="icon"><use href="#ic-chart"/></svg>Data results</strong><p>Genie query attachments become tables and ECharts options; tool results become timeline events.</p></div>
+        <div class="cell flow mint"><strong><svg class="icon"><use href="#ic-cloud"/></svg>Workspace continuity</strong><p>Databricks identities, endpoints, spaces, and UC names remain stable across app sessions.</p></div>
+        <div class="cell last mint"><strong><svg class="icon"><use href="#ic-admin"/></svg>Admin workspace</strong><p>SQL warehouse and service principal reads power catalog discovery and metadata refresh.</p></div>
+      </div>
+
+      <section class="event-band" aria-label="SSE event sequence">
+        <div class="event-label"><svg class="icon"><use href="#ic-chat"/></svg>SSE sequence</div>
+        <div class="event"><b>started</b><small>Conversation id is known; URL and sidebar update early.</small></div>
+        <div class="event"><b>token</b><small>Answer text streams; Genie statuses become status pills.</small></div>
+        <div class="event"><b>tool_call</b><small>Tool name and input appear in the timeline.</small></div>
+        <div class="event"><b>tool_result</b><small>Success or error state closes the tool event.</small></div>
+        <div class="event"><b>chart</b><small>Chart artifact renders before or alongside text.</small></div>
+        <div class="event"><b>suggestions</b><small>Follow-up chips appear when the turn completes.</small></div>
+        <div class="event"><b>done/error</b><small>Stream finalizes, retries surface, cache invalidates.</small></div>
+      </section>
+    </section>
+
+    <footer class="legend">
+      <span>Agent Hub | App journey diagram | Catalog -> chat -> stream -> enrichment -> governance</span>
+      <span class="items"><b>coral = chat path</b><b>blue = discovery/UI</b><b>mint = identity/state</b><b>amber = charts/output</b></span>
+    </footer>
+  </main>
+</body>
+</html>

@@ -23,9 +23,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from scgp_agent_hub.backend.models import AgentType, SubComponentType
-from scgp_agent_hub.backend.services import catalog_service
-from scgp_agent_hub.backend.services.catalog_service import (
+from agent_hub.backend.models import AgentType, SubComponentType
+from agent_hub.backend.services import catalog_service
+from agent_hub.backend.services.catalog_service import (
     _invalidate_tile_detail_cache,
     _tile_acl_contains_sp,
     grant_sp_access_on_tiles,

@@ -21,8 +21,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from scgp_agent_hub.backend.models import AgentType, UCTagConfig
-from scgp_agent_hub.backend.services import catalog_service as cs
+from agent_hub.backend.models import AgentType, UCTagConfig
+from agent_hub.backend.services import catalog_service as cs
 
 
 # --------------------------------------------------------------------------- #
@@ -66,18 +66,18 @@ class TestPrefixHelpers:
 
 
 class TestAdminWarehouseId:
-    def test_scgp_override_wins(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("SCGP_ADMIN_WAREHOUSE_ID", "wh-scgp")
+    def test_agent_hub_override_wins(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("AGENT_HUB_ADMIN_WAREHOUSE_ID", "wh-override")
         monkeypatch.setenv("DATABRICKS_WAREHOUSE_ID", "wh-sdk")
-        assert cs._admin_warehouse_id() == "wh-scgp"
+        assert cs._admin_warehouse_id() == "wh-override"
 
     def test_falls_back_to_sdk_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("SCGP_ADMIN_WAREHOUSE_ID", raising=False)
+        monkeypatch.delenv("AGENT_HUB_ADMIN_WAREHOUSE_ID", raising=False)
         monkeypatch.setenv("DATABRICKS_WAREHOUSE_ID", "wh-sdk")
         assert cs._admin_warehouse_id() == "wh-sdk"
 
     def test_empty_when_unconfigured(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("SCGP_ADMIN_WAREHOUSE_ID", raising=False)
+        monkeypatch.delenv("AGENT_HUB_ADMIN_WAREHOUSE_ID", raising=False)
         monkeypatch.delenv("DATABRICKS_WAREHOUSE_ID", raising=False)
         assert cs._admin_warehouse_id() == ""
 
@@ -89,7 +89,7 @@ class TestAdminWarehouseId:
 
 class TestDiscoverUCTaggedShortCircuits:
     def test_missing_sp_ws_is_noop(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("SCGP_ADMIN_WAREHOUSE_ID", "wh-1")
+        monkeypatch.setenv("AGENT_HUB_ADMIN_WAREHOUSE_ID", "wh-1")
         created, updated, skipped, warnings = cs._discover_uc_tagged(
             sp_ws=None, session=MagicMock(), tag_config=UCTagConfig()
         )
@@ -99,19 +99,19 @@ class TestDiscoverUCTaggedShortCircuits:
     def test_missing_warehouse_is_noop(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.delenv("SCGP_ADMIN_WAREHOUSE_ID", raising=False)
+        monkeypatch.delenv("AGENT_HUB_ADMIN_WAREHOUSE_ID", raising=False)
         monkeypatch.delenv("DATABRICKS_WAREHOUSE_ID", raising=False)
         created, updated, skipped, warnings = cs._discover_uc_tagged(
             sp_ws=MagicMock(), session=MagicMock(), tag_config=UCTagConfig()
         )
         assert (created, updated, skipped) == (0, 0, 0)
-        assert any("SCGP_ADMIN_WAREHOUSE_ID" in w for w in warnings)
+        assert any("AGENT_HUB_ADMIN_WAREHOUSE_ID" in w for w in warnings)
 
     def test_disable_flag_short_circuits(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv("SCGP_ADMIN_WAREHOUSE_ID", "wh-1")
-        monkeypatch.setenv("SCGP_DISABLE_UC_MCP_DISCOVERY", "1")
+        monkeypatch.setenv("AGENT_HUB_ADMIN_WAREHOUSE_ID", "wh-1")
+        monkeypatch.setenv("AGENT_HUB_DISABLE_UC_MCP_DISCOVERY", "1")
         created, updated, skipped, warnings = cs._discover_uc_tagged(
             sp_ws=MagicMock(), session=MagicMock(), tag_config=UCTagConfig()
         )
@@ -120,8 +120,8 @@ class TestDiscoverUCTaggedShortCircuits:
         assert (created, updated, skipped, warnings) == (0, 0, 0, [])
 
     def test_empty_tag_config_is_noop(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("SCGP_ADMIN_WAREHOUSE_ID", "wh-1")
-        monkeypatch.delenv("SCGP_DISABLE_UC_MCP_DISCOVERY", raising=False)
+        monkeypatch.setenv("AGENT_HUB_ADMIN_WAREHOUSE_ID", "wh-1")
+        monkeypatch.delenv("AGENT_HUB_DISABLE_UC_MCP_DISCOVERY", raising=False)
         cfg = UCTagConfig(agent_tag_key="", agent_tag_value="", agent_kind_tag_key="")
         created, updated, skipped, warnings = cs._discover_uc_tagged(
             sp_ws=MagicMock(), session=MagicMock(), tag_config=cfg
@@ -142,8 +142,8 @@ class TestDiscoverUCTaggedClassification:
     def test_function_default_kind_is_http(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv("SCGP_ADMIN_WAREHOUSE_ID", "wh-1")
-        monkeypatch.delenv("SCGP_DISABLE_UC_MCP_DISCOVERY", raising=False)
+        monkeypatch.setenv("AGENT_HUB_ADMIN_WAREHOUSE_ID", "wh-1")
+        monkeypatch.delenv("AGENT_HUB_DISABLE_UC_MCP_DISCOVERY", raising=False)
 
         def _fake_execute(sp_ws: Any, statement: str, warehouse_id: str, **_: Any) -> list[dict[str, Any]]:
             sql = statement.lower()
@@ -195,8 +195,8 @@ class TestDiscoverUCTaggedClassification:
     def test_function_with_mcp_kind_tag_is_classified_as_mcp(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv("SCGP_ADMIN_WAREHOUSE_ID", "wh-1")
-        monkeypatch.delenv("SCGP_DISABLE_UC_MCP_DISCOVERY", raising=False)
+        monkeypatch.setenv("AGENT_HUB_ADMIN_WAREHOUSE_ID", "wh-1")
+        monkeypatch.delenv("AGENT_HUB_DISABLE_UC_MCP_DISCOVERY", raising=False)
 
         call_log: list[str] = []
 
@@ -374,9 +374,9 @@ class TestDiscoverUCTaggedWarehouseEnvRegression:
     def test_runs_with_both_env_vars_mocked_sql(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv("SCGP_ADMIN_WAREHOUSE_ID", "wh-admin")
+        monkeypatch.setenv("AGENT_HUB_ADMIN_WAREHOUSE_ID", "wh-admin")
         monkeypatch.setenv("DATABRICKS_WAREHOUSE_ID", "wh-sdk-fallback")
-        monkeypatch.delenv("SCGP_DISABLE_UC_MCP_DISCOVERY", raising=False)
+        monkeypatch.delenv("AGENT_HUB_DISABLE_UC_MCP_DISCOVERY", raising=False)
 
         calls: list[str] = []
 
@@ -399,9 +399,9 @@ class TestDiscoverUCTaggedWarehouseEnvRegression:
     def test_runs_with_only_databricks_warehouse_id(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.delenv("SCGP_ADMIN_WAREHOUSE_ID", raising=False)
+        monkeypatch.delenv("AGENT_HUB_ADMIN_WAREHOUSE_ID", raising=False)
         monkeypatch.setenv("DATABRICKS_WAREHOUSE_ID", "wh-sdk-only")
-        monkeypatch.delenv("SCGP_DISABLE_UC_MCP_DISCOVERY", raising=False)
+        monkeypatch.delenv("AGENT_HUB_DISABLE_UC_MCP_DISCOVERY", raising=False)
 
         warehouses: list[str] = []
 

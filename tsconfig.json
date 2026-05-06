@@ -20,12 +20,12 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/scgp_agent_hub/ui/*"]
+      "@/*": ["./src/agent_hub/ui/*"]
     }
   },
   "include": [
-    "src/scgp_agent_hub/ui",
+    "src/agent_hub/ui",
     "vite.config.ts",
-    "src/scgp_agent_hub/ui/types/vite-env.d.ts"
+    "src/agent_hub/ui/types/vite-env.d.ts"
   ]
 }

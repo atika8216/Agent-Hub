@@ -9,7 +9,7 @@ access for non-owners. See docs/obo-auth-design.md §14.
 
 from __future__ import annotations
 
-from scgp_agent_hub.backend.services.catalog_service import _owner_has_access
+from agent_hub.backend.services.catalog_service import _owner_has_access
 
 
 class TestOwnerHasAccess:

@@ -58,7 +58,7 @@ Snapshot at the time of deploy:
 
 ### 0.2 Effective scopes from Databricks Apps API
 
-`databricks apps get scgp-agent-hub --profile fevm-aan-demo` should show:
+`databricks apps get agent-hub --profile fevm-aan-demo` should show:
 
 ```json
 {
@@ -80,7 +80,7 @@ Snapshot at the time of deploy:
                "iam.current-user:read", "serving.serving-endpoints", "sql"],
   "missing_from_token": [],
   "extra_in_token": ["email", "offline_access", "openid", "profile"],
-  "app_name": "scgp-agent-hub",
+  "app_name": "agent-hub",
   "notes": []
 }
 ```
@@ -119,11 +119,11 @@ Execute in order. Each step is idempotent; you can safely re-run.
 | File | Undo action |
 |---|---|
 | `app.yaml` | Remove the `BOOTSTRAP_ADMIN_EMAILS` env entry and its 3 preceding comment lines. Leave the other env vars intact. |
-| `src/scgp_agent_hub/backend/core/auth.py` | Delete `_bootstrap_admin_emails()` helper and the `require_debug_admin` function. Keep `require_role`. |
-| `src/scgp_agent_hub/backend/router.py` | In the `/debug/me/scopes` route, swap `Depends(require_debug_admin)` back to `Depends(require_role("admin"))`; remove `require_debug_admin` from the import list. |
-| `src/scgp_agent_hub/backend/services/debug_service.py` | Delete the file (and the `ScopeDebugOut` import in `router.py` + `models.py`). |
-| `src/scgp_agent_hub/backend/services/catalog_service.py` | Remove `_REQUIRED_SCOPE_RE`, `_extract_required_scope`, and the `required_scope=…` substring in the `Tiles API lookup via %s failed` warning. |
-| `src/scgp_agent_hub/backend/models.py` | Delete the `ScopeDebugOut` model. |
+| `src/agent_hub/backend/core/auth.py` | Delete `_bootstrap_admin_emails()` helper and the `require_debug_admin` function. Keep `require_role`. |
+| `src/agent_hub/backend/router.py` | In the `/debug/me/scopes` route, swap `Depends(require_debug_admin)` back to `Depends(require_role("admin"))`; remove `require_debug_admin` from the import list. |
+| `src/agent_hub/backend/services/debug_service.py` | Delete the file (and the `ScopeDebugOut` import in `router.py` + `models.py`). |
+| `src/agent_hub/backend/services/catalog_service.py` | Remove `_REQUIRED_SCOPE_RE`, `_extract_required_scope`, and the `required_scope=…` substring in the `Tiles API lookup via %s failed` warning. |
+| `src/agent_hub/backend/models.py` | Delete the `ScopeDebugOut` model. |
 | `scripts/check_scopes.py` | Delete the file. |
 | `README.md` | Remove the "Deploy" section referencing `scripts/check_scopes.py`. |
 | `tests/test_obo_scope_helpers.py`, `tests/test_check_scopes.py`, `tests/__init__.py` | Delete. |
@@ -136,12 +136,12 @@ Execute in order. Each step is idempotent; you can safely re-run.
 ```bash
 # The previous-state bundle had no P2a/P2b/P3 code and no bootstrap-admin env.
 databricks bundle deploy --target dev  --profile fevm-aan-demo
-databricks bundle run    scgp_agent_hub --target dev  --profile fevm-aan-demo
+databricks bundle run    agent_hub --target dev  --profile fevm-aan-demo
 # Smoke-check dev
-curl -I https://scgp-agent-hub-dev-7474650134110831.aws.databricksapps.com/api/v1/health/live
+curl -I https://agent-hub-dev-7474650134110831.aws.databricksapps.com/api/v1/health/live
 
 databricks bundle deploy --target prod --profile fevm-aan-demo
-databricks bundle run    scgp_agent_hub --target prod --profile fevm-aan-demo
+databricks bundle run    agent_hub --target prod --profile fevm-aan-demo
 ```
 
 ### 1.3 Re-consent (only if scopes changed on the way back)
@@ -162,7 +162,7 @@ Each item below can be reverted in isolation.
 Rationale: you're about to re-enable Lakebase on dev and don't need the
 bypass anymore.
 
-- `src/scgp_agent_hub/backend/router.py`: swap back to `require_role("admin")`.
+- `src/agent_hub/backend/router.py`: swap back to `require_role("admin")`.
 - `app.yaml`: remove `BOOTSTRAP_ADMIN_EMAILS`.
 - Redeploy. Existing consent carries over.
 
@@ -209,9 +209,9 @@ later starts persisting Genie Spaces.
 
 | File | Revert action |
 |---|---|
-| `src/scgp_agent_hub/backend/services/catalog_service.py` | Remove `AgentType.GENIE_SPACE` from the set returned by `_default_visible_for`. Restore the old docstring. |
-| `src/scgp_agent_hub/backend/core/lakebase.py` | Delete `_DATA_MIGRATIONS`, `_run_data_migrations`, and the `_run_data_migrations(engine)` call inside `_run_migrations_bg`. Keep the existing `_TABLES_DDL` / `_INDEXES_DDL` / `_SEED_DDL` blocks. |
-| `src/scgp_agent_hub/ui/routes/_sidebar/admin.catalog.tsx` | Remove the new `<p>` explaining visibility defaults (leave the original `Hidden agents stay registered...` paragraph). |
+| `src/agent_hub/backend/services/catalog_service.py` | Remove `AgentType.GENIE_SPACE` from the set returned by `_default_visible_for`. Restore the old docstring. |
+| `src/agent_hub/backend/core/lakebase.py` | Delete `_DATA_MIGRATIONS`, `_run_data_migrations`, and the `_run_data_migrations(engine)` call inside `_run_migrations_bg`. Keep the existing `_TABLES_DDL` / `_INDEXES_DDL` / `_SEED_DDL` blocks. |
+| `src/agent_hub/ui/routes/_sidebar/admin.catalog.tsx` | Remove the new `<p>` explaining visibility defaults (leave the original `Hidden agents stay registered...` paragraph). |
 | `tests/test_catalog_visibility.py` | Delete the file. |
 
 ### 4.2 Database cleanup (only if rolling back default and you want existing rows hidden again)
@@ -238,10 +238,10 @@ already-visible rows as-is.
 
 ```bash
 databricks bundle deploy --target prod -p fevm-aan-demo
-databricks bundle run    scgp_agent_hub --target prod -p fevm-aan-demo
+databricks bundle run    agent_hub --target prod -p fevm-aan-demo
 
 # Optional — verify the migration infra was removed from logs:
-databricks apps logs scgp-agent-hub -p fevm-aan-demo 2>&1 | grep -i "Data migration"
+databricks apps logs agent-hub -p fevm-aan-demo 2>&1 | grep -i "Data migration"
 # Expected: no matches.
 ```
 
@@ -281,16 +281,16 @@ Deploy B:
    tiles (F3 territory).
 
 **What actually changed.** Five localized hunks in
-`src/scgp_agent_hub/backend/services/catalog_service.py`, two hunks in
-`src/scgp_agent_hub/backend/router.py`, three new test files, and this
+`src/agent_hub/backend/services/catalog_service.py`, two hunks in
+`src/agent_hub/backend/router.py`, three new test files, and this
 rollback section.
 
 ### 5.1 Files touched in Deploy C
 
 | File | Revert action |
 |---|---|
-| `src/scgp_agent_hub/backend/services/catalog_service.py` | (a) Remove `_GENIE_ENDPOINT_PREFIX`, `_genie_endpoint_name`, `_owner_has_access`, `_smart_title`, `_derive_display_name`, `_list_serving_endpoints_resilient`, `_upsert_genie_spaces`, `_fetch_genie_spaces_raw`, `_persist_and_fetch_visibility`. (b) Restore `list_genie_spaces` to the single-shot OBO→SP read-through (no session parameter, no persistence). (c) Restore the inline `try: ws.serving_endpoints.list()` block in `discover_from_workspace`. (d) Restore `display_name = (tile.get("name") if tile else None) or endpoint_name` in both `discover_from_workspace` and `reclassify_existing`. (e) Remove the `genie:*` filter from `list_agents` SQL. (f) Drop the `user_email` parameter + owner fallback in `get_agent_detail` and `check_access`. |
-| `src/scgp_agent_hub/backend/router.py` | (a) Remove the `user_email` / owner fallback in `list_agents`. (b) Revert `get_agent` / `check_agent_access` to not pass `user_email`. (c) Revert `list_genie_spaces` to not open/pass a session. (d) Drop the module-level `logger`. |
+| `src/agent_hub/backend/services/catalog_service.py` | (a) Remove `_GENIE_ENDPOINT_PREFIX`, `_genie_endpoint_name`, `_owner_has_access`, `_smart_title`, `_derive_display_name`, `_list_serving_endpoints_resilient`, `_upsert_genie_spaces`, `_fetch_genie_spaces_raw`, `_persist_and_fetch_visibility`. (b) Restore `list_genie_spaces` to the single-shot OBO→SP read-through (no session parameter, no persistence). (c) Restore the inline `try: ws.serving_endpoints.list()` block in `discover_from_workspace`. (d) Restore `display_name = (tile.get("name") if tile else None) or endpoint_name` in both `discover_from_workspace` and `reclassify_existing`. (e) Remove the `genie:*` filter from `list_agents` SQL. (f) Drop the `user_email` parameter + owner fallback in `get_agent_detail` and `check_access`. |
+| `src/agent_hub/backend/router.py` | (a) Remove the `user_email` / owner fallback in `list_agents`. (b) Revert `get_agent` / `check_agent_access` to not pass `user_email`. (c) Revert `list_genie_spaces` to not open/pass a session. (d) Drop the module-level `logger`. |
 | `tests/test_display_name.py` | Delete. |
 | `tests/test_owner_access.py` | Delete. |
 | `tests/test_genie_persistence.py` | Delete. |
@@ -308,10 +308,10 @@ DELETE FROM catalog_config WHERE endpoint_name LIKE 'genie:%';
 
 ```bash
 databricks bundle deploy --target prod -p fevm-aan-demo
-databricks bundle run    scgp_agent_hub --target prod -p fevm-aan-demo
+databricks bundle run    agent_hub --target prod -p fevm-aan-demo
 
 # Verify discover still works but no longer logs genie upserts:
-databricks apps logs scgp-agent-hub -p fevm-aan-demo 2>&1 | grep -E 'Discovery complete|Genie Space'
+databricks apps logs agent-hub -p fevm-aan-demo 2>&1 | grep -E 'Discovery complete|Genie Space'
 ```
 
 ### 5.4 Partial rollbacks (keep what works)
@@ -364,7 +364,7 @@ Two independent changes land together:
    `ws.api_client.do(POST, /invocations, stream=True)` (which buffers
    the whole response before returning) with a raw `httpx.Client` + a
    streaming `POST` that iterates `resp.iter_lines()`. New helpers in
-   `src/scgp_agent_hub/backend/services/chat_service.py`:
+   `src/agent_hub/backend/services/chat_service.py`:
    - `_invocations_url`, `_auth_headers` — build the streaming request.
    - `_post_stream` — open the connection, handle a 400 on `messages` by
      retrying with `input` (preserves MAS `input`-field compatibility).
@@ -379,9 +379,9 @@ Two independent changes land together:
 2. **Immediate sidebar + URL flip.** `stream_chat` emits
    `data: {"type":"started","conversation_id":"..."}` the instant the
    conversation row + user message are persisted (before any upstream
-   call). `src/scgp_agent_hub/ui/hooks/use-chat.ts` handles the event by
+   call). `src/agent_hub/ui/hooks/use-chat.ts` handles the event by
    calling `setConversationId` + invalidating `listConversationsKey()`.
-   `src/scgp_agent_hub/ui/routes/_sidebar/chat.new.tsx` now mounts
+   `src/agent_hub/ui/routes/_sidebar/chat.new.tsx` now mounts
    `ConversationSidebar` on first render (previously it only appeared on
    `/chat/$id`) and navigates as soon as `conversationId` is set — the
    old `!isStreaming` gate was removed so the URL flips before any
@@ -406,20 +406,20 @@ Each hunk is independent; back out all three for the full revert.
 
 | Hunk | File | Revert to |
 | ---- | ---- | --------- |
-| **Backend stream** | `src/scgp_agent_hub/backend/services/chat_service.py` | Remove `_invocations_url`, `_auth_headers`, `_post_stream`, `_close_stream`, `_iter_sse_lines`, and the httpx import. Restore the single-branch `_query_endpoint` that just does `ws.api_client.do("POST", path, body={"stream": bool(stream), ...})`. Restore the old `_emit_streamed(streamed)` that iterates the SDK-returned iterable. |
-| **started event** | `src/scgp_agent_hub/backend/services/chat_service.py` | Delete the `yield _sse({"type":"started",...})` line and drop the `type` field from `error`/`done` events. |
-| **FE handling** | `src/scgp_agent_hub/ui/hooks/use-chat.ts`, `src/scgp_agent_hub/ui/routes/_sidebar/chat.new.tsx`, `src/scgp_agent_hub/ui/components/chat/streaming-message.tsx`, `src/scgp_agent_hub/ui/lib/types.ts` | Remove the `started` branch + `invalidateConversations` calls from `use-chat.ts`. Drop `ConversationSidebar` from `chat.new.tsx` and restore the `!chat.isStreaming` navigate gate. Restore `StreamingMessage`'s `if (!content) return null;`. Drop the `type` field from `SSEEvent`. |
+| **Backend stream** | `src/agent_hub/backend/services/chat_service.py` | Remove `_invocations_url`, `_auth_headers`, `_post_stream`, `_close_stream`, `_iter_sse_lines`, and the httpx import. Restore the single-branch `_query_endpoint` that just does `ws.api_client.do("POST", path, body={"stream": bool(stream), ...})`. Restore the old `_emit_streamed(streamed)` that iterates the SDK-returned iterable. |
+| **started event** | `src/agent_hub/backend/services/chat_service.py` | Delete the `yield _sse({"type":"started",...})` line and drop the `type` field from `error`/`done` events. |
+| **FE handling** | `src/agent_hub/ui/hooks/use-chat.ts`, `src/agent_hub/ui/routes/_sidebar/chat.new.tsx`, `src/agent_hub/ui/components/chat/streaming-message.tsx`, `src/agent_hub/ui/lib/types.ts` | Remove the `started` branch + `invalidateConversations` calls from `use-chat.ts`. Drop `ConversationSidebar` from `chat.new.tsx` and restore the `!chat.isStreaming` navigate gate. Restore `StreamingMessage`'s `if (!content) return null;`. Drop the `type` field from `SSEEvent`. |
 
 ### 6.3 Rollback commands
 
 ```bash
 # 1. Revert the three backend+frontend hunks via git (or by hand).
 git checkout HEAD~1 -- \
-  src/scgp_agent_hub/backend/services/chat_service.py \
-  src/scgp_agent_hub/ui/hooks/use-chat.ts \
-  src/scgp_agent_hub/ui/routes/_sidebar/chat.new.tsx \
-  src/scgp_agent_hub/ui/components/chat/streaming-message.tsx \
-  src/scgp_agent_hub/ui/lib/types.ts
+  src/agent_hub/backend/services/chat_service.py \
+  src/agent_hub/ui/hooks/use-chat.ts \
+  src/agent_hub/ui/routes/_sidebar/chat.new.tsx \
+  src/agent_hub/ui/components/chat/streaming-message.tsx \
+  src/agent_hub/ui/lib/types.ts
 
 # 2. Delete the tests that would otherwise fail against the old
 #    non-streaming implementation.
@@ -427,7 +427,7 @@ rm tests/test_chat_streaming.py
 
 # 3. Redeploy.
 databricks bundle deploy --target prod -p fevm-aan-demo
-databricks bundle run    scgp_agent_hub --target prod -p fevm-aan-demo
+databricks bundle run    agent_hub --target prod -p fevm-aan-demo
 ```
 
 ### 6.4 No migration, no scope changes
@@ -522,12 +522,12 @@ databricks bundle run    scgp_agent_hub --target prod -p fevm-aan-demo
 
 | File | Revert action |
 | ---- | ------------- |
-| `src/scgp_agent_hub/backend/services/chat_service.py` | (a) Delete `_GENIE_ENDPOINT_PREFIX`, `_is_genie`, `_genie_space_id`, `_genie_get_conv_id`, `_genie_set_conv_id`, `_genie_render_attachments`, `_genie_status_label`, `_stream_genie`, `_GENIE_POLL_TIMEOUT_S`, `_GENIE_POLL_INTERVAL_S`, `_simulate_chunked_stream`, `_CHUNK_CHARS_DEFAULT`, `_CHUNK_DELAY_S_DEFAULT`. (b) Remove the `_is_genie(endpoint_name)` dispatch block from `stream_chat` (the Genie branch + early return). (c) Restore `_post_stream` so it does **not** override `headers["Accept"] = "text/event-stream"` (re-uses the JSON-fallback Accept from `_auth_headers`). (d) Restore `_emit_streamed` JSON-fallback to a single token event instead of `_simulate_chunked_stream`. (e) Restore `_stream_with_fallback` non-streaming branch to a single token event instead of `_simulate_chunked_stream`. |
-| `src/scgp_agent_hub/backend/services/catalog_service.py` | Remove `_genie_has_access` and the Genie branches inside `get_agent_detail` and `check_access`. The `genie:` prefix on rows in `catalog_config` is harmless to leave behind — `list_agents` already filters them out. |
-| `src/scgp_agent_hub/backend/core/lakebase.py` | Drop the `metadata_json JSONB` column from `_TABLES_DDL` for `conversations` and remove the matching `ALTER TABLE conversations ADD COLUMN IF NOT EXISTS metadata_json JSONB` migration. The DB migration is idempotent — leaving the column in place is also fine; it's NULL for non-Genie conversations. |
-| `src/scgp_agent_hub/ui/components/catalog/genie-space-card.tsx` | Restore the original external `<a href={...databricks_url}>` wrapper. Drop the `<Link to="/catalog/$agentId">` import and the small "external link" icon button. |
-| `src/scgp_agent_hub/ui/routes/_sidebar/chat.new.tsx` | Restore the `navigate({ to: "/chat/$conversationId", params: { conversationId } })` call in the `useEffect` and drop the `window.history.replaceState` line. Remove `activeId` from the `ConversationSidebar` props. |
-| `src/scgp_agent_hub/ui/routes/_sidebar/chat.$conversationId.tsx` | Drop the `chat.isStreaming` gate in the `useEffect` that calls `chat.setMessages(normalized)` (always call). |
+| `src/agent_hub/backend/services/chat_service.py` | (a) Delete `_GENIE_ENDPOINT_PREFIX`, `_is_genie`, `_genie_space_id`, `_genie_get_conv_id`, `_genie_set_conv_id`, `_genie_render_attachments`, `_genie_status_label`, `_stream_genie`, `_GENIE_POLL_TIMEOUT_S`, `_GENIE_POLL_INTERVAL_S`, `_simulate_chunked_stream`, `_CHUNK_CHARS_DEFAULT`, `_CHUNK_DELAY_S_DEFAULT`. (b) Remove the `_is_genie(endpoint_name)` dispatch block from `stream_chat` (the Genie branch + early return). (c) Restore `_post_stream` so it does **not** override `headers["Accept"] = "text/event-stream"` (re-uses the JSON-fallback Accept from `_auth_headers`). (d) Restore `_emit_streamed` JSON-fallback to a single token event instead of `_simulate_chunked_stream`. (e) Restore `_stream_with_fallback` non-streaming branch to a single token event instead of `_simulate_chunked_stream`. |
+| `src/agent_hub/backend/services/catalog_service.py` | Remove `_genie_has_access` and the Genie branches inside `get_agent_detail` and `check_access`. The `genie:` prefix on rows in `catalog_config` is harmless to leave behind — `list_agents` already filters them out. |
+| `src/agent_hub/backend/core/lakebase.py` | Drop the `metadata_json JSONB` column from `_TABLES_DDL` for `conversations` and remove the matching `ALTER TABLE conversations ADD COLUMN IF NOT EXISTS metadata_json JSONB` migration. The DB migration is idempotent — leaving the column in place is also fine; it's NULL for non-Genie conversations. |
+| `src/agent_hub/ui/components/catalog/genie-space-card.tsx` | Restore the original external `<a href={...databricks_url}>` wrapper. Drop the `<Link to="/catalog/$agentId">` import and the small "external link" icon button. |
+| `src/agent_hub/ui/routes/_sidebar/chat.new.tsx` | Restore the `navigate({ to: "/chat/$conversationId", params: { conversationId } })` call in the `useEffect` and drop the `window.history.replaceState` line. Remove `activeId` from the `ConversationSidebar` props. |
+| `src/agent_hub/ui/routes/_sidebar/chat.$conversationId.tsx` | Drop the `chat.isStreaming` gate in the `useEffect` that calls `chat.setMessages(normalized)` (always call). |
 | `tests/test_chat_streaming.py` | Delete the 11 new tests added in Deploy E: `test_simulate_chunked_stream_*` (3), `test_post_stream_sets_accept_sse`, `test_is_genie_helpers`, `test_stream_genie_*` (5), `test_stream_chat_dispatches_to_genie`. Restore `test_emit_streamed_single_json_fallback_chunks` to its earlier single-event form (`test_emit_streamed_single_json_fallback`). |
 
 ### 7.3 Database cleanup (only if you want the column gone)
@@ -543,11 +543,11 @@ ALTER TABLE conversations DROP COLUMN IF EXISTS metadata_json;
 
 ```bash
 databricks bundle deploy --target prod -p fevm-aan-demo
-databricks bundle run    scgp_agent_hub --target prod -p fevm-aan-demo
+databricks bundle run    agent_hub --target prod -p fevm-aan-demo
 
 # Smoke-check: a Genie card should open externally again, MAS chat
 # should still flow tokens (or single-shot if upstream doesn't stream).
-databricks apps logs scgp-agent-hub -p fevm-aan-demo 2>&1 | \
+databricks apps logs agent-hub -p fevm-aan-demo 2>&1 | \
   grep -E 'Genie|Streaming|Simulated chunked'
 # Expected after rollback: no "Genie ..." entries, no "Simulated
 # chunked stream applied" entries.
@@ -608,17 +608,17 @@ matrix below.
 ### 8.1 What shipped
 
 1. **Enum expansion.** `AgentType` in
-   `src/scgp_agent_hub/backend/models.py` gains `HTTP_CONNECTION` and
+   `src/agent_hub/backend/models.py` gains `HTTP_CONNECTION` and
    `MCP_ENDPOINT`. Two new endpoint-name prefixes, `uc:` and `mcp:`,
    are now valid in `catalog_config.endpoint_name`.
 2. **Admin tag-config API.** `GET /admin/tag-config` (read, any auth
    user) and `PUT /admin/tag-config` (admin only) persist a
    `UCTagConfig` JSON blob in `admin_settings.uc_tag_config`. Defaults:
-   `agent_tag_key="scgp_agent_hub_role"`, `agent_tag_value="agent"`,
-   `agent_kind_tag_key="scgp_agent_hub_kind"`.
+   `agent_tag_key="agent_hub_role"`, `agent_tag_value="agent"`,
+   `agent_kind_tag_key="agent_hub_kind"`.
 3. **UC-tag discovery.** `_discover_uc_tagged` runs inside
    `discover_from_workspace` after the Genie upsert. Uses the SP
-   client + admin warehouse (`SCGP_ADMIN_WAREHOUSE_ID` →
+   client + admin warehouse (`AGENT_HUB_ADMIN_WAREHOUSE_ID` →
    `DATABRICKS_WAREHOUSE_ID`) to query `function_tags` and
    `connection_tags`, classifies rows via the optional kind tag,
    upserts under `uc:*` / `mcp:*` with `invoke_shape` already populated
@@ -648,19 +648,19 @@ matrix below.
 
 | File | Revert action |
 | ---- | ------------- |
-| `src/scgp_agent_hub/backend/models.py` | Remove `HTTP_CONNECTION` and `MCP_ENDPOINT` from `AgentType`. Remove `UCTagConfig` and `UCTagConfigUpdate` classes. |
-| `src/scgp_agent_hub/backend/services/admin_service.py` | Remove `UC_TAG_CONFIG_KEY`, `get_uc_tag_config`, `update_uc_tag_config`, and the `UCTagConfig` / `UCTagConfigUpdate` imports. `admin_settings` row with `key='uc_tag_config'` is safe to leave behind (or delete via SQL below). |
-| `src/scgp_agent_hub/backend/router.py` | Delete `GET /admin/tag-config` and `PUT /admin/tag-config` routes plus their imports. |
-| `src/scgp_agent_hub/backend/services/catalog_service.py` | Remove `_UC_ENDPOINT_PREFIX`, `_MCP_ENDPOINT_PREFIX`, `_is_uc_endpoint`, `_is_mcp_endpoint`, `_uc_endpoint_name`, `_mcp_endpoint_name`, `_strip_uc_prefix`, `_admin_warehouse_id`, `_normalize_sql_ident`, `_execute_sp_sql`, `_discover_uc_tagged`, `_upsert_uc_row`. In `discover_from_workspace`, remove the UC-tag discovery block. In `get_agent_detail` / `check_access`, drop the `uc:*` / `mcp:*` branches. In `reclassify_existing`, drop the prefix skip for `uc:*` / `mcp:*`. In `_default_visible_for`, drop the `HTTP_CONNECTION` / `MCP_ENDPOINT` cases (they'll fall through to the safe default). |
-| `src/scgp_agent_hub/backend/services/chat_service.py` | Remove `_UC_ENDPOINT_PREFIX`, `_MCP_ENDPOINT_PREFIX`, `_is_uc_connection`, `_is_mcp_endpoint`, `_uc_full_name`, `_mcp_full_name`. Remove the `uc:` / `mcp:` stub branch in `stream_chat`. In `_verify_access_best_effort`, drop the UC/MCP skip (leave the `genie:` skip). |
-| `src/scgp_agent_hub/ui/lib/types.ts` | Remove `"HTTP_CONNECTION"` and `"MCP_ENDPOINT"` from `AgentType`. Remove `UCTagConfig` interface. |
-| `src/scgp_agent_hub/ui/lib/agent-type.ts` | Remove the two new `agentTypeVariant` / `agentTypeLabel` cases. Remove `agentTypeFromEndpointName` OR restrict it back to `genie:` only (keeping it for genie is safe). |
-| `src/scgp_agent_hub/ui/lib/api.ts` | Remove `UCTagConfig`, `UCTagConfigUpdate`, `getUCTagConfig`, `useGetUCTagConfig`, `updateUCTagConfig`, `useUpdateUCTagConfig`. |
-| `src/scgp_agent_hub/ui/components/admin/tag-config-card.tsx` | Delete the file. |
-| `src/scgp_agent_hub/ui/routes/_sidebar/admin.catalog.tsx` | Remove the `<TagConfigCard />` import + render. Restore the descriptive `<p>` copy to the pre-Deploy-F wording. |
-| `src/scgp_agent_hub/ui/routes/_sidebar/catalog.index.tsx` | Remove `"HTTP Connection"` and `"MCP Endpoint"` from `FILTER_OPTIONS` and `TYPE_FILTERS`. |
-| `src/scgp_agent_hub/ui/routes/_sidebar/chat.new.tsx` | Restore the `agentType = agent?.agent_type ?? "MAS"` fallback. |
-| `src/scgp_agent_hub/ui/components/chat/agent-header.tsx` | Restore the `agentType = "MAS"` default signature (or keep the prefix fallback — it's harmless without the new prefixes). |
+| `src/agent_hub/backend/models.py` | Remove `HTTP_CONNECTION` and `MCP_ENDPOINT` from `AgentType`. Remove `UCTagConfig` and `UCTagConfigUpdate` classes. |
+| `src/agent_hub/backend/services/admin_service.py` | Remove `UC_TAG_CONFIG_KEY`, `get_uc_tag_config`, `update_uc_tag_config`, and the `UCTagConfig` / `UCTagConfigUpdate` imports. `admin_settings` row with `key='uc_tag_config'` is safe to leave behind (or delete via SQL below). |
+| `src/agent_hub/backend/router.py` | Delete `GET /admin/tag-config` and `PUT /admin/tag-config` routes plus their imports. |
+| `src/agent_hub/backend/services/catalog_service.py` | Remove `_UC_ENDPOINT_PREFIX`, `_MCP_ENDPOINT_PREFIX`, `_is_uc_endpoint`, `_is_mcp_endpoint`, `_uc_endpoint_name`, `_mcp_endpoint_name`, `_strip_uc_prefix`, `_admin_warehouse_id`, `_normalize_sql_ident`, `_execute_sp_sql`, `_discover_uc_tagged`, `_upsert_uc_row`. In `discover_from_workspace`, remove the UC-tag discovery block. In `get_agent_detail` / `check_access`, drop the `uc:*` / `mcp:*` branches. In `reclassify_existing`, drop the prefix skip for `uc:*` / `mcp:*`. In `_default_visible_for`, drop the `HTTP_CONNECTION` / `MCP_ENDPOINT` cases (they'll fall through to the safe default). |
+| `src/agent_hub/backend/services/chat_service.py` | Remove `_UC_ENDPOINT_PREFIX`, `_MCP_ENDPOINT_PREFIX`, `_is_uc_connection`, `_is_mcp_endpoint`, `_uc_full_name`, `_mcp_full_name`. Remove the `uc:` / `mcp:` stub branch in `stream_chat`. In `_verify_access_best_effort`, drop the UC/MCP skip (leave the `genie:` skip). |
+| `src/agent_hub/ui/lib/types.ts` | Remove `"HTTP_CONNECTION"` and `"MCP_ENDPOINT"` from `AgentType`. Remove `UCTagConfig` interface. |
+| `src/agent_hub/ui/lib/agent-type.ts` | Remove the two new `agentTypeVariant` / `agentTypeLabel` cases. Remove `agentTypeFromEndpointName` OR restrict it back to `genie:` only (keeping it for genie is safe). |
+| `src/agent_hub/ui/lib/api.ts` | Remove `UCTagConfig`, `UCTagConfigUpdate`, `getUCTagConfig`, `useGetUCTagConfig`, `updateUCTagConfig`, `useUpdateUCTagConfig`. |
+| `src/agent_hub/ui/components/admin/tag-config-card.tsx` | Delete the file. |
+| `src/agent_hub/ui/routes/_sidebar/admin.catalog.tsx` | Remove the `<TagConfigCard />` import + render. Restore the descriptive `<p>` copy to the pre-Deploy-F wording. |
+| `src/agent_hub/ui/routes/_sidebar/catalog.index.tsx` | Remove `"HTTP Connection"` and `"MCP Endpoint"` from `FILTER_OPTIONS` and `TYPE_FILTERS`. |
+| `src/agent_hub/ui/routes/_sidebar/chat.new.tsx` | Restore the `agentType = agent?.agent_type ?? "MAS"` fallback. |
+| `src/agent_hub/ui/components/chat/agent-header.tsx` | Restore the `agentType = "MAS"` default signature (or keep the prefix fallback — it's harmless without the new prefixes). |
 | `scripts/audit_agent_types.py` | Delete the file. |
 | `tests/test_catalog_uc_discovery.py` | Delete the file. |
 | `tests/test_chat_streaming.py` | Delete the three UC/MCP-focused cases: `test_uc_and_mcp_prefix_helpers`, `test_stream_chat_uc_stub_emits_phase2_notice`, `test_stream_chat_mcp_stub_emits_phase2_notice`. |
@@ -685,7 +685,7 @@ DELETE FROM admin_settings WHERE key = 'uc_tag_config';
 
 ```bash
 databricks bundle deploy --target prod -p fevm-aan-demo
-databricks bundle run    scgp_agent_hub --target prod -p fevm-aan-demo
+databricks bundle run    agent_hub --target prod -p fevm-aan-demo
 
 # Smoke-check
 curl -sS "$APP_URL/api/v1/agents" -H "Cookie: ..." | jq '.[] | .endpoint_name' \
@@ -696,7 +696,7 @@ curl -sS "$APP_URL/api/v1/agents" -H "Cookie: ..." | jq '.[] | .endpoint_name' \
 
 Each is independent — back one out without touching the others.
 
-- **Disable discovery only.** Set `SCGP_DISABLE_UC_MCP_DISCOVERY=1` in
+- **Disable discovery only.** Set `AGENT_HUB_DISABLE_UC_MCP_DISCOVERY=1` in
   `app.yaml` env. `_discover_uc_tagged` short-circuits (returns
   `(0,0,0,[])`). Existing rows remain visible; just no new ones land.
   Good for an emergency in a region where `*_tags` views misbehave.
@@ -706,7 +706,7 @@ Each is independent — back one out without touching the others.
 - **Disable the chat stub only.** Remove the `uc:` / `mcp:` branch from
   `stream_chat`. Users who click a UC/MCP card will see the usual
   "endpoint not found" error instead of the friendly Phase-2 notice —
-  not ideal, but harmless. (Phase 2's `SCGP_DISABLE_UC_MCP_CHAT=1`
+  not ideal, but harmless. (Phase 2's `AGENT_HUB_DISABLE_UC_MCP_CHAT=1`
   flag re-routes back to the stub after Phase 2 ships.)
 
 ### 8.6 No scope changes, no consent re-prompt
@@ -714,7 +714,7 @@ Each is independent — back one out without touching the others.
 - **No `app.yaml` / `databricks.yml` scope edits.** The SP client
   already has metastore-admin reach via the existing bundle config.
 - **No new scopes.**
-- **One optional env var** — `SCGP_ADMIN_WAREHOUSE_ID` (if unset, the
+- **One optional env var** — `AGENT_HUB_ADMIN_WAREHOUSE_ID` (if unset, the
   standard SDK `DATABRICKS_WAREHOUSE_ID` is used; if neither is set,
   discovery skips with a visible warning — no crash).
 - **No DB migration.** Discovery upserts into the existing
@@ -749,7 +749,7 @@ fix) are untouched. MAS and Genie chat are untouched.
 
 ### 9.1 What shipped
 
-1. `src/scgp_agent_hub/backend/services/chat_service.py`
+1. `src/agent_hub/backend/services/chat_service.py`
    - New helpers: `_stream_http_connection` (UC function + UC HTTP
      Connection via SQL Statements REST), `_stream_mcp` (JSON-RPC
      over streamable-HTTP MCP), plus ~10 private helpers for
@@ -758,10 +758,10 @@ fix) are untouched. MAS and Genie chat are untouched.
      argument-building.
    - `stream_chat` gains `sp_ws` + `tool_choice` params. The `uc:` /
      `mcp:` branches now dispatch to the new invokers; the old stub
-     is behind `SCGP_DISABLE_UC_MCP_CHAT=1`.
-2. `src/scgp_agent_hub/backend/models.py` — `ChatRequest.tool_choice`
+     is behind `AGENT_HUB_DISABLE_UC_MCP_CHAT=1`.
+2. `src/agent_hub/backend/models.py` — `ChatRequest.tool_choice`
    (`Optional[str]`).
-3. `src/scgp_agent_hub/backend/router.py` — `/chat/{endpoint_name}`
+3. `src/agent_hub/backend/router.py` — `/chat/{endpoint_name}`
    forwards `sp_ws` and `body.tool_choice` into `chat_service`.
 4. `pyproject.toml` — adds `mcp>=1.2.0` (kept for future direct
    use; the runtime path uses `httpx` JSON-RPC for portability).
@@ -804,7 +804,7 @@ just never receive events and never render):
 
 ```bash
 # Set on the app resource via bundle config or Databricks UI
-SCGP_DISABLE_UC_MCP_CHAT=1
+AGENT_HUB_DISABLE_UC_MCP_CHAT=1
 ```
 
 Then redeploy the app; `uc:*` and `mcp:*` chat falls back to the
@@ -816,19 +816,19 @@ If a full revert is needed:
 
 ```bash
 # Kill switch first (gives you seconds to decide vs. a redeploy)
-databricks apps update scgp-agent-hub \
+databricks apps update agent-hub \
   --user-api-scopes "..."  # unchanged; use the last known-good set
 
 # Then, on a feature branch:
 git revert <deploy-G-commits>
 databricks bundle deploy --target prod --profile fevm-aan-demo
-databricks apps deploy scgp-agent-hub --source-code-path ... --profile fevm-aan-demo
+databricks apps deploy agent-hub --source-code-path ... --profile fevm-aan-demo
 ```
 
 ### 9.5 Partial rollbacks (keep what works)
 
 - Keep HTTP connection invocation, drop MCP: set
-  `SCGP_DISABLE_UC_MCP_CHAT=1` only for `mcp:*` — not currently a
+  `AGENT_HUB_DISABLE_UC_MCP_CHAT=1` only for `mcp:*` — not currently a
   separate flag, so achieve this by removing the MCP tag (or
   un-tagging the specific UC connection) so discovery stops upserting
   the row.
@@ -856,7 +856,7 @@ through the SP + admin warehouse.
   `token` chunks → `done` for both kinds. For MCP servers with >1
   non-conventional tool, a `needs_tool_choice` event is emitted and
   the UI renders a picker.
-- `SCGP_DISABLE_UC_MCP_CHAT=1` restores the Phase-1 stub verbatim
+- `AGENT_HUB_DISABLE_UC_MCP_CHAT=1` restores the Phase-1 stub verbatim
   (error banner on a `uc:` / `mcp:` agent disappears, friendly notice
   returns).
 - `pytest tests/test_chat_streaming.py` — all green (30 cases
@@ -877,7 +877,7 @@ no migration is required beyond the one already included in Deploy G
 
 - Replaced the "Observatory" Design Context in `.impeccable.md` with
   the "Clarity" direction (warm neutrals, iOS voice, dual theme).
-- Rewrote `src/scgp_agent_hub/ui/styles/globals.css` with an OKLCH
+- Rewrote `src/agent_hub/ui/styles/globals.css` with an OKLCH
   dual-theme token set; default `@theme` block seeds Tailwind
   utilities with dark values; `[data-theme="light"]` /
   `[data-theme="dark"]` blocks re-bind the same tokens at runtime.
@@ -890,7 +890,7 @@ no migration is required beyond the one already included in Deploy G
   stack with Pretendard Variable fallback; removed the Fontshare CDN
   from `ui/index.html`.
 - New backend endpoint `GET /api/v1/app/config` returns
-  `{ legacy_ui: bool }`, gated by the `SCGP_LEGACY_UI` env var.
+  `{ legacy_ui: bool }`, gated by the `AGENT_HUB_LEGACY_UI` env var.
 
 ### 10.2 Rollback
 
@@ -898,7 +898,7 @@ Two independent rollback paths, pick the least invasive that resolves
 the incident:
 
 1. **Runtime flip (zero code change).** In the Databricks App UI set
-   `SCGP_LEGACY_UI=1` on both dev and prod environments. The next
+   `AGENT_HUB_LEGACY_UI=1` on both dev and prod environments. The next
    request the frontend makes to `/api/v1/app/config` returns
    `legacy_ui: true`; `ThemeProvider` applies `data-theme="dark"`
    unconditionally, hides the theme toggle, and keeps the Clarity
@@ -908,7 +908,7 @@ the incident:
    next route load).
 
 2. **Full CSS revert.** If the Clarity tokens themselves are the
-   problem, revert `src/scgp_agent_hub/ui/styles/globals.css` to the
+   problem, revert `src/agent_hub/ui/styles/globals.css` to the
    commit immediately preceding Deploy H and redeploy. All component
    classes (`bg-surface`, `text-text-primary`, etc.) continue to work
    against whatever tokens the reverted file defines. No DB revert.
@@ -926,17 +926,17 @@ the incident:
 
 | File | Role in rollback |
 | --- | --- |
-| `src/scgp_agent_hub/ui/styles/globals.css` | Primary revert target (single-file CSS revert). |
-| `src/scgp_agent_hub/ui/providers/theme-provider.tsx` | Reads `SCGP_LEGACY_UI`; revert only if the provider itself misbehaves. |
-| `src/scgp_agent_hub/ui/components/layout/theme-toggle.tsx` | Hidden automatically when `legacy_ui=true`. |
-| `src/scgp_agent_hub/ui/components/layout/mobile-tab-bar.tsx` | New; safe to leave if reverting CSS only. |
-| `src/scgp_agent_hub/ui/components/ui/{button,card,badge,input,tooltip}.tsx` | Primitives still work against legacy tokens after CSS revert. |
-| `src/scgp_agent_hub/ui/components/chat/{message-bubble,streaming-message,tool-call-block,chat-input,agent-header}.tsx` | Same — class names are token-based. |
-| `src/scgp_agent_hub/ui/components/catalog/{agent-card,genie-space-card,search-input,empty-catalog,sub-agent-row}.tsx` | Same. |
-| `src/scgp_agent_hub/ui/routes/_sidebar/{catalog.index,catalog.$agentId,admin.settings,admin.catalog}.tsx` | Same. |
-| `src/scgp_agent_hub/backend/router.py` | New `/app/config` handler — safe to leave live. |
-| `src/scgp_agent_hub/backend/models.py` | Adds `AppConfigOut` — additive. |
-| `src/scgp_agent_hub/ui/lib/app-config.ts` | New client — inert if the endpoint is absent (falls back to `{ legacy_ui: false }`). |
+| `src/agent_hub/ui/styles/globals.css` | Primary revert target (single-file CSS revert). |
+| `src/agent_hub/ui/providers/theme-provider.tsx` | Reads `AGENT_HUB_LEGACY_UI`; revert only if the provider itself misbehaves. |
+| `src/agent_hub/ui/components/layout/theme-toggle.tsx` | Hidden automatically when `legacy_ui=true`. |
+| `src/agent_hub/ui/components/layout/mobile-tab-bar.tsx` | New; safe to leave if reverting CSS only. |
+| `src/agent_hub/ui/components/ui/{button,card,badge,input,tooltip}.tsx` | Primitives still work against legacy tokens after CSS revert. |
+| `src/agent_hub/ui/components/chat/{message-bubble,streaming-message,tool-call-block,chat-input,agent-header}.tsx` | Same — class names are token-based. |
+| `src/agent_hub/ui/components/catalog/{agent-card,genie-space-card,search-input,empty-catalog,sub-agent-row}.tsx` | Same. |
+| `src/agent_hub/ui/routes/_sidebar/{catalog.index,catalog.$agentId,admin.settings,admin.catalog}.tsx` | Same. |
+| `src/agent_hub/backend/router.py` | New `/app/config` handler — safe to leave live. |
+| `src/agent_hub/backend/models.py` | Adds `AppConfigOut` — additive. |
+| `src/agent_hub/ui/lib/app-config.ts` | New client — inert if the endpoint is absent (falls back to `{ legacy_ui: false }`). |
 | `app.yaml` | Documents the three Phase-*n* rollback env flags as comments. |
 | `scripts/check_contrast.py` | Local dev helper; never runs in CI. |
 | `scripts/screenshots.py` | Local dev helper; never runs in CI. |
@@ -944,7 +944,7 @@ the incident:
 
 ### 10.4 Flag semantics
 
-- `SCGP_LEGACY_UI=1` (server env var): read at request time by
+- `AGENT_HUB_LEGACY_UI=1` (server env var): read at request time by
   `/api/v1/app/config`. The frontend treats truthy = "lock to dark,
   hide theme toggle, render data-legacy-ui=1 on `<html>`".
 - The flag is **not** stored in `admin_settings` or `user_prefs` — a
@@ -963,7 +963,7 @@ the incident:
 - `pytest tests/test_app_config.py` — all 11 cases green.
 - Manual browser verification: both themes render, the theme toggle
   flips `data-theme` on `<html>` in <200ms, and setting
-  `SCGP_LEGACY_UI=1` in a local shell (`export SCGP_LEGACY_UI=1` then
+  `AGENT_HUB_LEGACY_UI=1` in a local shell (`export AGENT_HUB_LEGACY_UI=1` then
   restart the server) hides the toggle on next refresh.
 
 ---
@@ -974,7 +974,7 @@ Deployed: 2026-04-27 (prod target `fevm-aan-demo`).
 
 ### 11.1 What changed
 
-Backend (`src/scgp_agent_hub/backend/services/catalog_service.py`):
+Backend (`src/agent_hub/backend/services/catalog_service.py`):
 
 1. New helper `_load_tile_detail(ws, sp_ws, *, tile_id, endpoint_name)`
    calls `GET /api/2.0/multi-agent-supervisors/{tile_id}` with the same
@@ -1012,7 +1012,7 @@ Frontend — catalog detail page (`catalog.$agentId.tsx`):
 
 Frontend — shared components:
 
-1. New `src/scgp_agent_hub/ui/lib/agent-glyph.ts` centralizes icon +
+1. New `src/agent_hub/ui/lib/agent-glyph.ts` centralizes icon +
    tint mapping for agent and sub-component types. Keeps the hero,
    sub-agent rows, and card chips visually consistent.
 2. `sub-agent-row.tsx` redesigned as a full-row tappable cell: tinted
@@ -1059,7 +1059,7 @@ returns `"You do not have read access to the agent."`.
 
 After the app is installed in a workspace, the app's Service Principal
 must hold `CAN_MANAGE` on every MAS/KA tile we want to render. The
-SP id is surfaced in `databricks apps get scgp-agent-hub`.
+SP id is surfaced in `databricks apps get agent-hub`.
 
 **Preferred path — admin buttons on `/admin/catalog` (Deploy J).** An
 admin who manages the target tiles opens `/admin/catalog` and clicks:
@@ -1164,7 +1164,7 @@ oil_price_agent, ml_customer_intelligence_agent).
 
 ### 11.3 Rollback lever
 
-The `SCGP_LEGACY_UI=1` env flag from Deploy H remains applicable and
+The `AGENT_HUB_LEGACY_UI=1` env flag from Deploy H remains applicable and
 reverts the visual changes. Backend changes are additive — the refresh
 path is gated on stale-row detection and silent-fails on any API error,
 so removing the UI doesn't leave the DB in a bad state. To remove the

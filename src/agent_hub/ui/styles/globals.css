@@ -1,0 +1,333 @@
+@import "tailwindcss";
+
+/*
+ * "Clarity" design system — Phase 3 of the Agent Hub roadmap.
+ *
+ * Dual-theme (system / light / dark). Neutrals are warm-tinted (~40deg hue
+ * at low chroma). Two accent roles: ``brand`` (warm red-orange) is used for
+ * primary CTAs and the user's own message bubble; ``chrome`` (iOS system
+ * blue) is used for focus rings, nav selection, and links.
+ *
+ * Token strategy: the @theme block seeds Tailwind v4 utility classes
+ * (``bg-background``, ``text-text-primary`` etc.) with a *default* palette
+ * that matches the dark theme. The ``[data-theme="light"]`` / ``[data-theme="dark"]``
+ * blocks below re-assign the same custom properties at runtime, so
+ * ThemeProvider can flip themes by setting one attribute on ``<html>``.
+ */
+
+@theme {
+  /* --- Surfaces (defaults = dark theme) --- */
+  --color-background: oklch(0.14 0.005 40);
+  --color-surface: oklch(0.17 0.006 40);
+  --color-surface-elevated: oklch(0.20 0.006 40);
+  --color-surface-overlay: oklch(0.23 0.007 40);
+  --color-surface-recessed: oklch(0.12 0.005 40);
+  --color-border: oklch(0.28 0.007 40);
+  --color-border-strong: oklch(0.36 0.008 40);
+
+  /* --- Text --- */
+  --color-text-primary: oklch(0.96 0.003 40);
+  --color-text-secondary: oklch(0.80 0.004 40);
+  --color-text-muted: oklch(0.68 0.005 40);
+
+  /* --- Brand accent (warm red-orange) --- */
+  --color-primary: oklch(0.68 0.20 30);
+  --color-primary-foreground: oklch(1 0 0);
+
+  /* --- Chrome accent (iOS system blue) --- */
+  --color-info: oklch(0.72 0.15 250);
+
+  /* --- Semantic --- */
+  --color-success: oklch(0.74 0.17 145);
+  --color-error: oklch(0.68 0.20 25);
+  --color-warning: oklch(0.82 0.15 85);
+
+  /* --- Badge type colors (tuned for dual theme readability) --- */
+  --color-badge-mas: oklch(0.68 0.20 30);
+  --color-badge-genie: oklch(0.72 0.15 250);
+  --color-badge-ka: oklch(0.62 0.20 300);
+  --color-badge-uc: oklch(0.78 0.15 85);
+  --color-badge-mcp: oklch(0.70 0.14 175);
+  --color-badge-agent: oklch(0.72 0.15 250);
+  --color-badge-model: oklch(0.62 0.008 40);
+  --color-badge-external: oklch(0.74 0.16 55);
+  --color-badge-vector: oklch(0.64 0.18 200);
+
+  /*
+   * --- Typography ---
+   *
+   * Tailwind v4 derives ``.font-{name}`` utilities from ``--font-*`` tokens.
+   * ``font-sans`` (the default) and ``font-mono`` are the two the product
+   * code actually touches; ``font-display`` is available for oversized
+   * headings. Apple devices pick up SF Pro Display/Text automatically via
+   * ``-apple-system``; everyone else lands on Pretendard Variable (iOS-
+   * adjacent, open source) before falling back to ``system-ui``.
+   */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Pretendard Variable", "Pretendard", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "Pretendard Variable", "Pretendard", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+
+  /*
+   * --- Type scale (fixed rem, iOS voice) ---
+   *
+   * Each size ships with a matching line-height and tracking so the
+   * ``.text-{name}`` utility is self-contained. Values are tuned for the
+   * 15px base set below.
+   */
+  --text-display-1: 1.75rem;
+  --text-display-1--line-height: 1.15;
+  --text-display-1--letter-spacing: -0.025em;
+  --text-display-1--font-weight: 700;
+
+  --text-display-2: 1.375rem;
+  --text-display-2--line-height: 1.25;
+  --text-display-2--letter-spacing: -0.02em;
+  --text-display-2--font-weight: 600;
+
+  --text-title: 1.0625rem;
+  --text-title--line-height: 1.35;
+  --text-title--letter-spacing: -0.01em;
+  --text-title--font-weight: 600;
+
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.5;
+  --text-body--letter-spacing: 0em;
+  --text-body--font-weight: 400;
+
+  --text-subhead: 0.8125rem;
+  --text-subhead--line-height: 1.4;
+  --text-subhead--letter-spacing: 0.005em;
+  --text-subhead--font-weight: 500;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.35;
+  --text-caption--letter-spacing: 0.01em;
+  --text-caption--font-weight: 500;
+
+  /* --- Radii (iOS voice) --- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  /*
+   * --- Motion tokens ---
+   *
+   * Three easings mapped to iOS voice: ``quart`` for most list/card
+   * entrances, ``quint`` for fast attention moments, ``expo`` for the
+   * long soft landing we use on sheets/dialogs. Durations are broken
+   * into fast/med/slow so ``transition-[...] duration-[var(--duration-med)]``
+   * works out of the box.
+   */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /*
+   * iOS curves per .impeccable.md: ``--ease-ios`` is the standard
+   * UIView animation easing (used by route push/pop, toast slide-in,
+   * detail morph). ``--ease-ios-emphasize`` adds a sub-percent
+   * overshoot for focused attention moments (active nav pill landing,
+   * chat send acknowledgment). Both must stay in sync with
+   * ``lib/motion.ts`` so JS and CSS share a single visual cadence.
+   */
+  --ease-ios: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-ios-emphasize: cubic-bezier(0.2, 0, 0, 1.05);
+
+  --duration-fast: 120ms;
+  --duration-med: 220ms;
+  --duration-slow: 320ms;
+  /* iOS UINavigationController push/pop is ~300ms; we stay slightly
+     under so cross-route transitions feel snappy on desktop too. */
+  --duration-page: 260ms;
+}
+
+/*
+ * Light theme overrides. Applied when ThemeProvider sets
+ * ``<html data-theme="light">``.
+ */
+[data-theme="light"] {
+  --color-background: oklch(0.985 0.002 40);
+  --color-surface: oklch(0.975 0.003 40);
+  --color-surface-elevated: oklch(1 0 0);
+  --color-surface-overlay: oklch(0.995 0.001 40);
+  --color-surface-recessed: oklch(0.95 0.003 40);
+  --color-border: oklch(0.90 0.004 40);
+  --color-border-strong: oklch(0.82 0.005 40);
+
+  --color-text-primary: oklch(0.16 0.01 40);
+  --color-text-secondary: oklch(0.38 0.008 40);
+  --color-text-muted: oklch(0.52 0.006 40);
+
+  --color-primary: oklch(0.62 0.21 30);
+  --color-primary-foreground: oklch(1 0 0);
+
+  --color-info: oklch(0.59 0.18 250);
+
+  --color-success: oklch(0.58 0.18 145);
+  --color-error: oklch(0.60 0.22 25);
+  --color-warning: oklch(0.55 0.16 85);
+
+  /* Badge colors restated so they read on light surfaces. */
+  --color-badge-mas: oklch(0.62 0.21 30);
+  --color-badge-genie: oklch(0.59 0.18 250);
+  --color-badge-ka: oklch(0.52 0.22 300);
+  --color-badge-uc: oklch(0.64 0.18 85);
+  --color-badge-mcp: oklch(0.58 0.15 175);
+  --color-badge-agent: oklch(0.59 0.18 250);
+  --color-badge-model: oklch(0.42 0.008 40);
+  --color-badge-external: oklch(0.62 0.17 55);
+  --color-badge-vector: oklch(0.54 0.18 200);
+}
+
+/* Explicit dark-theme block so ``<html data-theme="dark">`` always wins
+   over any stale light values from a previous attribute. Values mirror
+   the @theme defaults. */
+[data-theme="dark"] {
+  --color-background: oklch(0.14 0.005 40);
+  --color-surface: oklch(0.17 0.006 40);
+  --color-surface-elevated: oklch(0.20 0.006 40);
+  --color-surface-overlay: oklch(0.23 0.007 40);
+  --color-surface-recessed: oklch(0.12 0.005 40);
+  --color-border: oklch(0.28 0.007 40);
+  --color-border-strong: oklch(0.36 0.008 40);
+
+  --color-text-primary: oklch(0.96 0.003 40);
+  --color-text-secondary: oklch(0.80 0.004 40);
+  --color-text-muted: oklch(0.68 0.005 40);
+
+  --color-primary: oklch(0.68 0.20 30);
+  --color-primary-foreground: oklch(1 0 0);
+
+  --color-info: oklch(0.72 0.15 250);
+}
+
+/* Base layer */
+html {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background-color: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* Opt into iOS-like numeral rendering where supported. */
+  font-variant-numeric: proportional-nums;
+  font-feature-settings: "ss01", "cv11";
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+code, pre, kbd, samp {
+  font-family: var(--font-mono);
+}
+
+/*
+ * Dual-theme scrollbar. Kept slim so the chat log + catalog grid still
+ * feel calm. Thumbs are a hair above surface so they're visible but not
+ * loud.
+ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/*
+ * iOS-style focus ring. 2px chrome-accent halo + 2px offset so the ring
+ * never collides with the element's own border radius. Tab-only focus
+ * (``:focus-visible``) — click focus doesn't show a ring.
+ */
+:focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/*
+ * --- Entrance motion ---
+ *
+ * ``fade-slide-in`` is the canonical list-entrance animation: content
+ * begins slightly below and translucent, then settles in place. Apply
+ * with ``.stagger-child`` and a ``--i`` CSS variable per element so
+ * staggered lists ripple in sequence (capped at 10 indices via
+ * ``min(var(--i,0), 10)`` in consumer code).
+ */
+@keyframes fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stagger-child {
+  animation: fade-slide-in var(--duration-slow) var(--ease-out-quart) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+/*
+ * --- Primitive press state ---
+ *
+ * Used on buttons/cards that live inside lists. Tiny scale gives a
+ * native "tap down" feeling without the jank of scaling by a full
+ * percent.
+ */
+.press-tappable {
+  transition: transform var(--duration-fast) var(--ease-out-quart),
+    background-color var(--duration-fast) var(--ease-out-quart),
+    box-shadow var(--duration-fast) var(--ease-out-quart);
+}
+
+.press-tappable:active {
+  transform: scale(0.985);
+}
+
+/*
+ * Respect user motion preferences.
+ *
+ * Earlier iterations of this rule forced ``transition-property: opacity``
+ * on every element, which silently broke the iOS active-pill, the chat
+ * autoscroll, and any color/border crossfade. The refined rule keeps
+ * crossfades working at 120ms (so the UI still feels alive) but kills
+ * transforms entirely -- transforms are the one thing motion-sensitive
+ * users actually need stopped. ``motion`` honors the same media query
+ * via ``useReducedMotion()`` so JS-driven springs degrade in lockstep.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 120ms !important;
+    transition-property:
+      opacity, background-color, border-color, color !important;
+  }
+  .stagger-child {
+    animation: none !important;
+  }
+  .press-tappable:active {
+    transform: none !important;
+  }
+}

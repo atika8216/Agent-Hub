@@ -13,7 +13,7 @@ Returns the current authenticated user.
 **Response 200:**
 ```json
 {
-  "email": "user@scgp.com",
+  "email": "user@example.com",
   "role": "admin" | "user",
   "first_seen": "2025-01-15T10:30:00Z"
 }
@@ -38,7 +38,7 @@ List all visible agents in the catalog.
       "agent_type": "MAS",
       "sub_agent_count": 5,
       "has_access": true,
-      "owner_email": "data-platform-team@scgp.com"
+      "owner_email": "data-platform-team@example.com"
     }
   ]
 }
@@ -57,7 +57,7 @@ Get agent detail with sub-agent information.
   "display_name": "Supply Chain Forecaster",
   "description": "...",
   "agent_type": "MAS",
-  "owner_email": "data-platform-team@scgp.com",
+  "owner_email": "data-platform-team@example.com",
   "has_access": true,
   "sub_agents": [
     {
@@ -71,7 +71,7 @@ Get agent detail with sub-agent information.
       "type": "external_mcp",
       "description": "Direct ERP connector",
       "has_access": false,
-      "owner_email": "sap-admin@scgp.com"
+      "owner_email": "sap-admin@example.com"
     }
   ]
 }

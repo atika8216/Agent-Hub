@@ -28,11 +28,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from scgp_agent_hub.backend.services import (
+from agent_hub.backend.services import (
     pin_event_service as pes,
     pin_service as ps,
 )
-from scgp_agent_hub.backend.services.base import NotFoundError, ValidationError
+from agent_hub.backend.services.base import NotFoundError, ValidationError
 
 
 # --------------------------------------------------------------------------- #

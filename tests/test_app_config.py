@@ -1,6 +1,6 @@
 """``GET /app/config`` — public frontend flags.
 
-The endpoint is the wire-level contract for the Phase 3 ``SCGP_LEGACY_UI``
+The endpoint is the wire-level contract for the Phase 3 ``AGENT_HUB_LEGACY_UI``
 rollback lever. ThemeProvider fetches it before hydrating, so a regression
 here would prevent operators from disengaging the Clarity redesign without
 a code revert.
@@ -19,7 +19,7 @@ from typing import Any
 
 import pytest
 
-from scgp_agent_hub.backend.router import get_app_config
+from agent_hub.backend.router import get_app_config
 
 
 def _fake_request(*, engine: Any = None, workspace_client: Any = None) -> Any:
@@ -43,12 +43,12 @@ def _fake_request(*, engine: Any = None, workspace_client: Any = None) -> Any:
 class TestAppConfigLegacyUI:
     def test_default_off(self, monkeypatch: pytest.MonkeyPatch) -> None:
         # Unset the flag explicitly so we're not affected by the shell env.
-        monkeypatch.delenv("SCGP_LEGACY_UI", raising=False)
+        monkeypatch.delenv("AGENT_HUB_LEGACY_UI", raising=False)
         out = get_app_config(_fake_request())
         assert out.legacy_ui is False
 
     def test_flag_on(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("SCGP_LEGACY_UI", "1")
+        monkeypatch.setenv("AGENT_HUB_LEGACY_UI", "1")
         out = get_app_config(_fake_request())
         assert out.legacy_ui is True
 
@@ -60,7 +60,7 @@ class TestAppConfigLegacyUI:
     ) -> None:
         # We require the literal string ``"1"`` (after stripping) so operators
         # cannot accidentally trip the flag with a truthy-looking value.
-        monkeypatch.setenv("SCGP_LEGACY_UI", raw)
+        monkeypatch.setenv("AGENT_HUB_LEGACY_UI", raw)
         out = get_app_config(_fake_request())
         expected = raw.strip() == "1"
         assert out.legacy_ui is expected
@@ -71,11 +71,11 @@ class TestAppConfigLegacyUI:
     ) -> None:
         # The env is read at request time, so toggling it after the module
         # imports must take effect on the next call without reload.
-        monkeypatch.delenv("SCGP_LEGACY_UI", raising=False)
+        monkeypatch.delenv("AGENT_HUB_LEGACY_UI", raising=False)
         assert get_app_config(_fake_request()).legacy_ui is False
-        monkeypatch.setenv("SCGP_LEGACY_UI", "1")
+        monkeypatch.setenv("AGENT_HUB_LEGACY_UI", "1")
         assert get_app_config(_fake_request()).legacy_ui is True
-        monkeypatch.delenv("SCGP_LEGACY_UI")
+        monkeypatch.delenv("AGENT_HUB_LEGACY_UI")
         assert get_app_config(_fake_request()).legacy_ui is False
 
     def test_not_affected_by_other_flags(
@@ -83,8 +83,8 @@ class TestAppConfigLegacyUI:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         # Make sure the Phase 2 kill switch doesn't leak into Phase 3.
-        monkeypatch.setenv("SCGP_DISABLE_UC_MCP_CHAT", "1")
-        monkeypatch.delenv("SCGP_LEGACY_UI", raising=False)
+        monkeypatch.setenv("AGENT_HUB_DISABLE_UC_MCP_CHAT", "1")
+        monkeypatch.delenv("AGENT_HUB_LEGACY_UI", raising=False)
         assert get_app_config(_fake_request()).legacy_ui is False
 
 
@@ -110,17 +110,17 @@ class TestAppConfigFeatureFlags:
 
 
 def test_module_has_no_import_time_env_read() -> None:
-    # Guard: if anyone inlines ``os.environ.get("SCGP_LEGACY_UI")`` at module
+    # Guard: if anyone inlines ``os.environ.get("AGENT_HUB_LEGACY_UI")`` at module
     # top level the flag would be frozen at import time and rollback would
     # require a full app restart. The test fails fast in that case.
     import importlib
-    import scgp_agent_hub.backend.router as router
+    import agent_hub.backend.router as router
 
-    os.environ.pop("SCGP_LEGACY_UI", None)
+    os.environ.pop("AGENT_HUB_LEGACY_UI", None)
     importlib.reload(router)
-    os.environ["SCGP_LEGACY_UI"] = "1"
+    os.environ["AGENT_HUB_LEGACY_UI"] = "1"
     try:
         # The freshly reloaded module should still observe the new value.
         assert router.get_app_config(_fake_request()).legacy_ui is True
     finally:
-        os.environ.pop("SCGP_LEGACY_UI", None)
+        os.environ.pop("AGENT_HUB_LEGACY_UI", None)

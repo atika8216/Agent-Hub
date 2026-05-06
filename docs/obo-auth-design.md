@@ -1,7 +1,7 @@
 # OBO Authentication — Design Note
 
 > **Audience:** Databricks Field Engineering / internal engineers maintaining
-> SCGP Agent Hub. This is a working design note, not a customer-facing doc.
+> Agent Hub. This is a working design note, not a customer-facing doc.
 >
 > **Scope:** How On-Behalf-Of (OBO) auth is implemented in this app today,
 > the OBO-then-Service-Principal fallback pattern, current scope drift,
@@ -19,7 +19,7 @@
   so Unity Catalog / endpoint permissions are enforced correctly.
 - **Headers we use:** `X-Forwarded-Access-Token`, `X-Forwarded-Email`,
   `X-Forwarded-Preferred-Username`, `X-Forwarded-User`, `X-Forwarded-Host`,
-  `X-Request-Id`. Parsed once in [_headers.py](../src/scgp_agent_hub/backend/core/_headers.py).
+  `X-Request-Id`. Parsed once in [_headers.py](../src/agent_hub/backend/core/_headers.py).
 - **Scope model:** what the OBO token is *allowed* to do is declared in
   `app.yaml` (`user_authorization.scopes`) and `databricks.yml`
   (`user_api_scopes`). Those two lists are currently **out of sync** —
@@ -40,7 +40,7 @@
 
 | Identity | Source | Where we use it | Typical failure mode |
 |---|---|---|---|
-| **App service principal (SP)** | `DATABRICKS_CLIENT_ID` / `DATABRICKS_CLIENT_SECRET` env vars (Databricks Apps runtime) → `app.state.workspace_client` in [_workspace.py](../src/scgp_agent_hub/backend/core/_workspace.py) | Background tasks, Lakebase schema migrations, UC introspection (model-version deps), fallback for read APIs whose OBO scope we don't have. | SP has broad but *app-level* permissions; user-private resources (e.g. Agent Bricks tiles) are invisible to it. |
+| **App service principal (SP)** | `DATABRICKS_CLIENT_ID` / `DATABRICKS_CLIENT_SECRET` env vars (Databricks Apps runtime) → `app.state.workspace_client` in [_workspace.py](../src/agent_hub/backend/core/_workspace.py) | Background tasks, Lakebase schema migrations, UC introspection (model-version deps), fallback for read APIs whose OBO scope we don't have. | SP has broad but *app-level* permissions; user-private resources (e.g. Agent Bricks tiles) are invisible to it. |
 | **User OBO** | `X-Forwarded-Access-Token` header set by the Apps proxy → `WorkspaceClient(Config(token=..., auth_type="pat"))` in `_get_user_ws` | All user-facing reads and the chat invocation path. | Forwarded token only carries the scopes declared in `user_api_scopes`; missing scope → 403. |
 
 **Rule of thumb:** user scopes gate what the *forwarded* token can do; SP
@@ -98,12 +98,12 @@ All headers are set by the Databricks Apps reverse proxy
 
 ## 5. Backend implementation
 
-### 5.1 Header parsing — [backend/core/_headers.py](../src/scgp_agent_hub/backend/core/_headers.py)
+### 5.1 Header parsing — [backend/core/_headers.py](../src/agent_hub/backend/core/_headers.py)
 
 FastAPI uses the `Header` alias pattern to pull Databricks-proxied headers
 into a typed model:
 
-```26:41:src/scgp_agent_hub/backend/core/_headers.py
+```26:41:src/agent_hub/backend/core/_headers.py
 def get_databricks_headers(
     host: Annotated[str | None, Header(alias="X-Forwarded-Host")] = None,
     user_name: Annotated[str | None, Header(alias="X-Forwarded-Preferred-Username")] = None,
@@ -119,7 +119,7 @@ def get_databricks_headers(
 
 `token` is wrapped in `SecretStr` so it doesn't leak into repr output.
 
-### 5.2 User WorkspaceClient build — [backend/core/_workspace.py](../src/scgp_agent_hub/backend/core/_workspace.py)
+### 5.2 User WorkspaceClient build — [backend/core/_workspace.py](../src/agent_hub/backend/core/_workspace.py)
 
 `_get_user_ws` is where the OBO token becomes a usable SDK client. Two
 safeguards:
@@ -133,7 +133,7 @@ safeguards:
    env pair is for the *app's* SP, not the user — without this clear-out
    we'd silently degrade to SP auth.
 
-```71:89:src/scgp_agent_hub/backend/core/_workspace.py
+```71:89:src/agent_hub/backend/core/_workspace.py
     # Reuse the app-level host so we don't accidentally resolve to a
     # different env-driven host. Build a Config explicitly so the SDK can't
     # silently fall back to the service principal's oauth-m2m creds picked
@@ -155,9 +155,9 @@ UserWorkspaceClientDependency: TypeAlias = Annotated[
 ]
 ```
 
-### 5.3 Email resolution — [backend/core/auth.py](../src/scgp_agent_hub/backend/core/auth.py)
+### 5.3 Email resolution — [backend/core/auth.py](../src/agent_hub/backend/core/auth.py)
 
-```16:26:src/scgp_agent_hub/backend/core/auth.py
+```16:26:src/agent_hub/backend/core/auth.py
 def _resolve_user_email(request: Request) -> str:
     """Extract the caller's email from Databricks Apps headers or workspace client."""
     email = request.headers.get("X-Forwarded-Email", "")
@@ -174,13 +174,13 @@ Fallback chain: `X-Forwarded-Email` → `ws.current_user.me()` →
 in `_get_user_role`) and by Lakebase row ownership (`user_email` column on
 `conversations` / `messages`).
 
-### 5.4 Route injection — [backend/router.py](../src/scgp_agent_hub/backend/router.py)
+### 5.4 Route injection — [backend/router.py](../src/agent_hub/backend/router.py)
 
 Every user-facing route takes `UserWorkspaceClientDependency`; routes that
 also need broader catalog introspection pull the SP separately from
 `request.app.state`:
 
-```121:156:src/scgp_agent_hub/backend/router.py
+```121:156:src/agent_hub/backend/router.py
 def get_agent(
     endpoint_name: str,
     request: Request,
@@ -193,7 +193,7 @@ def get_agent(
     return catalog_service.get_agent_detail(endpoint_name, user_ws, session, sp_ws)
 ```
 
-```164:174:src/scgp_agent_hub/backend/router.py
+```164:174:src/agent_hub/backend/router.py
 def list_genie_spaces(
     request: Request,
     user_ws: UserWorkspaceClientDependency,
@@ -217,10 +217,10 @@ Rather than surface 403s to users for read-only metadata, we retry the
 call as the app SP. The SP has broad app-level perms and is a stable
 identity for read-through.
 
-**Where we use it:** [backend/services/catalog_service.py](../src/scgp_agent_hub/backend/services/catalog_service.py)
+**Where we use it:** [backend/services/catalog_service.py](../src/agent_hub/backend/services/catalog_service.py)
 for tiles, MLflow model-version deps, and Genie spaces.
 
-```79:94:src/scgp_agent_hub/backend/services/catalog_service.py
+```79:94:src/agent_hub/backend/services/catalog_service.py
     candidates: list[tuple[str, WorkspaceClient]] = []
     if ws is not None:
         candidates.append(("obo", ws))
@@ -240,13 +240,13 @@ for tiles, MLflow model-version deps, and Genie spaces.
 ```
 
 `list_genie_spaces` uses the same shape (see
-[catalog_service.py](../src/scgp_agent_hub/backend/services/catalog_service.py#L1036)).
+[catalog_service.py](../src/agent_hub/backend/services/catalog_service.py#L1036)).
 
 **When we explicitly do NOT fall back:** chat invocation. The user must
 have access to the serving endpoint themselves — otherwise we'd be
 leaking model output across users. See `_verify_access_best_effort`:
 
-```144:158:src/scgp_agent_hub/backend/services/chat_service.py
+```144:158:src/agent_hub/backend/services/chat_service.py
 def _verify_access_best_effort(endpoint_name: str, ws: WorkspaceClient) -> None:
     """Optional metadata read for observability only.
 
@@ -279,7 +279,7 @@ discovery and rely on the Genie Space click-through enforcing access.
 ## 7. Classification rule (colocated with auth because step 1 depends on scope)
 
 Agent-type precedence in `_classify_agent_type`
-([catalog_service.py §_classify_agent_type](../src/scgp_agent_hub/backend/services/catalog_service.py#L142)):
+([catalog_service.py §_classify_agent_type](../src/agent_hub/backend/services/catalog_service.py#L142)):
 
 1. `tile.tile_type` from `/api/2.0/tiles` → `MAS` / `KA` *(source of truth,
    but unavailable on prod today — see F3)*.
@@ -310,7 +310,7 @@ user_authorization:
     - dashboards.genie
 ```
 
-### 8.2 `databricks.yml` → `resources.apps.scgp_agent_hub.user_api_scopes`
+### 8.2 `databricks.yml` → `resources.apps.agent_hub.user_api_scopes`
 
 ```62:66:databricks.yml
       user_api_scopes:
@@ -380,7 +380,7 @@ add it to `databricks.yml`.
 | P | Action | Owner | Notes |
 |---|---|---|---|
 | P1 | ~~Add `iam.access-control:workspace` to `databricks.yml → user_api_scopes`.~~ **Attempted 2026-04-17, bundle rejected.** Captured as F1 platform gap. Committed the inline comment + accepted-drift entry in `scripts/check_scopes.py` so the next person trying this finds the prior art. Re-attempt when the platform accepts the scope. | App owner | |
-| P1 | File a Databricks ES ticket asking for the OAuth scope name required by `GET /api/2.0/tiles` and whether it is exposable via `user_api_scopes`. Attach [#apa-apps p1775754820](https://databricks.slack.com/archives/C05E5R3F57B/p1775754820145389) and `app_id=scgp-agent-hub`. Draft lives at [`es-tickets/tiles-api-scope.md`](es-tickets/tiles-api-scope.md) — updated 2026-04-17 with prod-verified evidence (`required_scope=unknown`, SP returns 0 tiles, debug endpoint shows all declared scopes flowing). Ready to file. | App owner / FE | Addresses F3 root cause. |
+| P1 | File a Databricks ES ticket asking for the OAuth scope name required by `GET /api/2.0/tiles` and whether it is exposable via `user_api_scopes`. Attach [#apa-apps p1775754820](https://databricks.slack.com/archives/C05E5R3F57B/p1775754820145389) and `app_id=agent-hub`. Draft lives at [`es-tickets/tiles-api-scope.md`](es-tickets/tiles-api-scope.md) — updated 2026-04-17 with prod-verified evidence (`required_scope=unknown`, SP returns 0 tiles, debug endpoint shows all declared scopes flowing). Ready to file. | App owner / FE | Addresses F3 root cause. |
 | ~~P2~~ | ~~Add a `GET /api/v1/debug/me/scopes` endpoint that returns `effective_user_api_scopes` *and* introspects the forwarded token to list its real scopes. Admin-only.~~ **Done 2026-04-17** — see §14 runbook. Addresses F6. | App owner | |
 | ~~P2~~ | ~~When the tiles API 403s, log one structured warning per discovery run with the exact scope name from the error body.~~ **Done 2026-04-17** — `_load_tiles_map` now emits `required_scope=…` from the error body. Addresses F3 observability. | App owner | |
 | ~~P3~~ | ~~Add a deploy-time check script (`scripts/check_scopes.py`) that diffs `app.yaml` vs `databricks.yml` and prints a reminder about F5.~~ **Done 2026-04-17** — wired into README. | App owner | |
@@ -419,13 +419,13 @@ Touched by OBO auth in this repo:
 
 | File | Role |
 |---|---|
-| [backend/core/_headers.py](../src/scgp_agent_hub/backend/core/_headers.py) | Parse `X-Forwarded-*` headers into a typed model. |
-| [backend/core/_workspace.py](../src/scgp_agent_hub/backend/core/_workspace.py) | Build SP client at startup; build per-request OBO client via `_get_user_ws`. |
-| [backend/core/auth.py](../src/scgp_agent_hub/backend/core/auth.py) | Email resolution and `require_role` RBAC. |
-| [backend/router.py](../src/scgp_agent_hub/backend/router.py) | `UserWorkspaceClientDependency` injection on every user route. |
-| [backend/services/catalog_service.py](../src/scgp_agent_hub/backend/services/catalog_service.py) | Tiles / Genie / MLflow OBO→SP fallback; classification precedence. |
-| [backend/services/chat_service.py](../src/scgp_agent_hub/backend/services/chat_service.py) | `_verify_access_best_effort` — no SP fallback on invocation. |
-| [backend/services/debug_service.py](../src/scgp_agent_hub/backend/services/debug_service.py) | Token scope introspection for `/api/v1/debug/me/scopes`. |
+| [backend/core/_headers.py](../src/agent_hub/backend/core/_headers.py) | Parse `X-Forwarded-*` headers into a typed model. |
+| [backend/core/_workspace.py](../src/agent_hub/backend/core/_workspace.py) | Build SP client at startup; build per-request OBO client via `_get_user_ws`. |
+| [backend/core/auth.py](../src/agent_hub/backend/core/auth.py) | Email resolution and `require_role` RBAC. |
+| [backend/router.py](../src/agent_hub/backend/router.py) | `UserWorkspaceClientDependency` injection on every user route. |
+| [backend/services/catalog_service.py](../src/agent_hub/backend/services/catalog_service.py) | Tiles / Genie / MLflow OBO→SP fallback; classification precedence. |
+| [backend/services/chat_service.py](../src/agent_hub/backend/services/chat_service.py) | `_verify_access_best_effort` — no SP fallback on invocation. |
+| [backend/services/debug_service.py](../src/agent_hub/backend/services/debug_service.py) | Token scope introspection for `/api/v1/debug/me/scopes`. |
 | [app.yaml](../app.yaml) | Declared user scopes (app manifest). |
 | [databricks.yml](../databricks.yml) | Granted user scopes (bundle, deployed source of truth). |
 | [scripts/check_scopes.py](../scripts/check_scopes.py) | Pre-deploy drift check + F5 reminder. |
@@ -486,7 +486,7 @@ Expected on a freshly re-consented user (all scopes flowing):
   "missing_from_token": [],
   "extra_in_token": ["offline_access"],
   "user_email": "alice@example.com",
-  "app_name": "scgp-agent-hub",
+  "app_name": "agent-hub",
   "notes": []
 }
 ```
@@ -517,7 +517,7 @@ the scope, and Databricks does not re-prompt them.
 
 2. Remediate for yourself first:
    - Go to **Account Settings → Apps**
-   - Find `scgp-agent-hub`, click **Revoke**
+   - Find `agent-hub`, click **Revoke**
    - Revisit the app URL; you should be shown a fresh consent screen.
    - Re-run `/api/v1/debug/me/scopes` → `missing_from_token` should be empty.
 
@@ -742,10 +742,10 @@ The existing `genie:<space_id>` convention is unchanged.
 Admins configure three tag keys via `GET`/`PUT /admin/tag-config`
 (persisted in `admin_settings.uc_tag_config`):
 
-- `agent_tag_key` (default `scgp_agent_hub_role`) — tag name that marks
+- `agent_tag_key` (default `agent_hub_role`) — tag name that marks
   a UC object as a hub agent.
 - `agent_tag_value` (default `agent`) — the value the tag must hold.
-- `agent_kind_tag_key` (default `scgp_agent_hub_kind`) — optional tag
+- `agent_kind_tag_key` (default `agent_hub_kind`) — optional tag
   whose value is `http` or `mcp` and disambiguates the two new types.
   If absent, functions default to `HTTP_CONNECTION` and connections
   default to `MCP_ENDPOINT` (matches the common case where UC
@@ -761,7 +761,7 @@ end-user's OBO token** in practice — reads return empty result sets even
 when the user can otherwise see the tagged objects. We therefore call
 them through the **SP workspace client** (same pattern we use for Tiles,
 see §5.6), with the admin warehouse resolved from
-`SCGP_ADMIN_WAREHOUSE_ID` (falling back to `DATABRICKS_WAREHOUSE_ID`).
+`AGENT_HUB_ADMIN_WAREHOUSE_ID` (falling back to `DATABRICKS_WAREHOUSE_ID`).
 
 Only read-only, catalog-metadata queries cross the SP trust boundary
 here. No row-level data flows through the SP. The discovery pass upserts
@@ -792,12 +792,12 @@ skip) so the ad-hoc endpoint preflight never floods the logs with 404s.
 emits a single friendly `token` SSE explaining Phase-2 arrival, then
 `done`. The message references the full UC name so ops can find the
 object quickly. Phase 2 replaces this branch with `_stream_http_connection`
-and `_stream_mcp`; rollback is the same `SCGP_DISABLE_UC_MCP_CHAT=1`
+and `_stream_mcp`; rollback is the same `AGENT_HUB_DISABLE_UC_MCP_CHAT=1`
 flag (see rollback doc Deploy G).
 
 ### 15.6 Operator checklist per deploy
 
-1. Ensure `SCGP_ADMIN_WAREHOUSE_ID` is set (or `DATABRICKS_WAREHOUSE_ID`
+1. Ensure `AGENT_HUB_ADMIN_WAREHOUSE_ID` is set (or `DATABRICKS_WAREHOUSE_ID`
    exists in the app runtime). Without it, UC-tag discovery logs a
    warning and skips — no error.
 2. Run `POST /agents/discover` once and check the logs for
@@ -813,9 +813,9 @@ flag (see rollback doc Deploy G).
 
 ### 15.7 Feature flags
 
-- `SCGP_DISABLE_UC_MCP_DISCOVERY=1` → discovery skips the UC-tag pass
+- `AGENT_HUB_DISABLE_UC_MCP_DISCOVERY=1` → discovery skips the UC-tag pass
   entirely (used when `*_tags` views misbehave in a new region).
-- `SCGP_ADMIN_WAREHOUSE_ID` unset → discovery skips with a visible
+- `AGENT_HUB_ADMIN_WAREHOUSE_ID` unset → discovery skips with a visible
   warning returned from `POST /agents/discover`.
 - Rollback SQL to clear the two new types: see rollback doc §8.
 
@@ -828,10 +828,10 @@ flag (see rollback doc Deploy G).
 Phase 1 surfaced `uc:*` (HTTP Connection) and `mcp:*` (MCP Endpoint) rows
 in the catalog but chat was a polite stub. Phase 2 ships real streaming
 for both. Everything else in the app is unchanged; the Phase 1 stub path
-is preserved behind `SCGP_DISABLE_UC_MCP_CHAT=1` so rollback is a single
+is preserved behind `AGENT_HUB_DISABLE_UC_MCP_CHAT=1` so rollback is a single
 env var and an app redeploy.
 
-Shipped in [chat_service.py](../src/scgp_agent_hub/backend/services/chat_service.py):
+Shipped in [chat_service.py](../src/agent_hub/backend/services/chat_service.py):
 
 - `_stream_http_connection` — dispatches on `invoke_shape`:
   - `uc_function_sql` → `SELECT full_name(?)` via the SQL Statements REST
@@ -912,7 +912,7 @@ response bodies — just shape and latency):
 
 ### 16.6 Operator checklist per deploy
 
-1. Deploy Phase 2 to `fevm-aan-demo` dev with `SCGP_DISABLE_UC_MCP_CHAT`
+1. Deploy Phase 2 to `fevm-aan-demo` dev with `AGENT_HUB_DISABLE_UC_MCP_CHAT`
    **unset** and confirm the catalog still shows Phase 1's UC/MCP
    rows.
 2. Pick one `uc:` agent and send a prompt — expect a `running` status
@@ -920,13 +920,13 @@ response bodies — just shape and latency):
    lines in `oneenv` logs.
 3. Pick one `mcp:` agent (managed + external) — confirm a `tool_call`
    card appears mid-stream and the answer streams after.
-4. Set `SCGP_DISABLE_UC_MCP_CHAT=1`, redeploy, confirm the Phase 1
+4. Set `AGENT_HUB_DISABLE_UC_MCP_CHAT=1`, redeploy, confirm the Phase 1
    stub returns. Flip it off again.
 5. Promote to prod once the above steps pass.
 
 ### 16.7 Feature flags
 
-- `SCGP_DISABLE_UC_MCP_CHAT=1` → re-routes every `uc:*` / `mcp:*`
+- `AGENT_HUB_DISABLE_UC_MCP_CHAT=1` → re-routes every `uc:*` / `mcp:*`
   chat turn back to the Phase 1 notice stub. Frontend is unaffected;
   tool-call UI components simply never receive their events.
 - `DATABRICKS_MCP_MANAGED_URL` / `DATABRICKS_MCP_MANAGED_TOKEN` →

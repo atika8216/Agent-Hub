@@ -4,11 +4,11 @@ import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
-const uiRoot = path.resolve(__dirname, "src/scgp_agent_hub/ui");
+const uiRoot = path.resolve(__dirname, "src/agent_hub/ui");
 
 export default defineConfig({
   define: {
-    __APP_NAME__: JSON.stringify("SCGP Agent Hub"),
+    __APP_NAME__: JSON.stringify("Agent Hub"),
   },
   plugins: [
     TanStackRouterVite({
@@ -37,7 +37,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: path.resolve(__dirname, "src/scgp_agent_hub/__dist__"),
+    outDir: path.resolve(__dirname, "src/agent_hub/__dist__"),
     emptyOutDir: true,
   },
 });

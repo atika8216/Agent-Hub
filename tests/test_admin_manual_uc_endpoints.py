@@ -24,9 +24,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from scgp_agent_hub.backend.models import ManualUCEndpointIn
-from scgp_agent_hub.backend.services import admin_service
-from scgp_agent_hub.backend.services.base import (
+from agent_hub.backend.models import ManualUCEndpointIn
+from agent_hub.backend.services import admin_service
+from agent_hub.backend.services.base import (
     ConflictError,
     NotFoundError,
     ValidationError,

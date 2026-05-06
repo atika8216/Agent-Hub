@@ -28,7 +28,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from scgp_agent_hub.backend.services import suggestion_service as ss
+from agent_hub.backend.services import suggestion_service as ss
 
 
 # --------------------------------------------------------------------------- #

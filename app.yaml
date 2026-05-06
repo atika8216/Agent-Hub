@@ -1,6 +1,6 @@
 command:
   - uvicorn
-  - scgp_agent_hub.backend.app:app
+  - agent_hub.backend.app:app
   - --host
   - 0.0.0.0
   - --port
@@ -9,6 +9,10 @@ command:
   - "2"
 
 env:
+  # NOTE: LAKEBASE_PROJECT_ID intentionally retains the legacy
+  # "scgp-agent-hub" value. It points at the existing Lakebase project
+  # holding all conversation/pin/chart history; renaming it would
+  # disconnect the running app from its data. See README "Deploy".
   - name: LAKEBASE_PROJECT_ID
     value: scgp-agent-hub
   - name: LAKEBASE_BRANCH_ID
@@ -22,16 +26,16 @@ env:
     value: atika.antarasen@databricks.com
   # Phase rollback levers (all default-off, docs/rollback-obo-gaps-2026-04-17.md).
   # Set the corresponding env var to "1" in the Databricks App UI to activate:
-  #   * SCGP_DISABLE_UC_MCP_DISCOVERY=1 — Phase 1 (disable UC-tag discovery).
-  #   * SCGP_DISABLE_UC_MCP_CHAT=1      — Phase 2 (revert HTTP/MCP chat to stub).
-  #   * SCGP_LEGACY_UI=1                — Phase 3 (lock UI to legacy dark palette).
+  #   * AGENT_HUB_DISABLE_UC_MCP_DISCOVERY=1 — Phase 1 (disable UC-tag discovery).
+  #   * AGENT_HUB_DISABLE_UC_MCP_CHAT=1      — Phase 2 (revert HTTP/MCP chat to stub).
+  #   * AGENT_HUB_LEGACY_UI=1                — Phase 3 (lock UI to legacy dark palette).
   # SQL warehouse used by the app SP for UC tag discovery
   # (system.information_schema.function_tags / connection_tags). The bundle
   # also sets this via `resources.apps.*.config.env`, but the Databricks
   # Apps runtime sources env vars from app.yaml, so we duplicate it here
   # to guarantee propagation. Keep the value aligned with
-  # databricks.yml -> variables.scgp_admin_warehouse_id.
-  - name: SCGP_ADMIN_WAREHOUSE_ID
+  # databricks.yml -> variables.agent_hub_admin_warehouse_id.
+  - name: AGENT_HUB_ADMIN_WAREHOUSE_ID
     value: "7b7cd1e7e17a3862"
 
 user_authorization:

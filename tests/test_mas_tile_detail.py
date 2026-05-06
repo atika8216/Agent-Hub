@@ -25,9 +25,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from scgp_agent_hub.backend.models import SubComponentType
-from scgp_agent_hub.backend.services import catalog_service
-from scgp_agent_hub.backend.services.catalog_service import (
+from agent_hub.backend.models import SubComponentType
+from agent_hub.backend.services import catalog_service
+from agent_hub.backend.services.catalog_service import (
     _derive_description,
     _derive_display_name,
     _invalidate_tile_detail_cache,

@@ -1,5 +1,5 @@
 {
-  "name": "scgp_agent_hub_ui",
+  "name": "agent_hub_ui",
   "scripts": {
     "dev": "bunx --bun vite --config vite.config.ts",
     "build": "vite build --config vite.config.ts",

@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import Any
 from unittest.mock import MagicMock
 
-from scgp_agent_hub.backend.services.catalog_service import (
+from agent_hub.backend.services.catalog_service import (
     _fetch_genie_spaces_raw,
     _genie_endpoint_name,
     list_agents,

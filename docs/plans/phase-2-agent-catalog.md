@@ -10,7 +10,7 @@
 
 ### Step 2a.1: Catalog Service
 
-Create `src/scgp_agent_hub/backend/services/catalog_service.py`.
+Create `src/agent_hub/backend/services/catalog_service.py`.
 
 **`discover_from_workspace(ws: WorkspaceClient, session: Session)`**:
 1. Call `ws.serving_endpoints.list()` to get all serving endpoints
@@ -48,7 +48,7 @@ Create `src/scgp_agent_hub/backend/services/catalog_service.py`.
 
 ### Step 2a.2: Pydantic Models
 
-Add to `src/scgp_agent_hub/backend/models.py`:
+Add to `src/agent_hub/backend/models.py`:
 
 ```python
 from enum import Enum
@@ -101,7 +101,7 @@ class CatalogConfigOut(BaseModel):
 
 ### Step 2a.3: API Routes
 
-Add to `src/scgp_agent_hub/backend/router.py`:
+Add to `src/agent_hub/backend/router.py`:
 
 ```python
 @router.get("/agents", response_model=AgentListOut)

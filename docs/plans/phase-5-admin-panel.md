@@ -8,7 +8,7 @@
 
 ## Step 5.1: Admin Service
 
-Create `src/scgp_agent_hub/backend/services/admin_service.py`.
+Create `src/agent_hub/backend/services/admin_service.py`.
 
 **`get_all_settings(session) -> dict`**:
 ```python

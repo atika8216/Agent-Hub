@@ -12,7 +12,7 @@
 
 ```
 src/
-  scgp_agent_hub/
+  agent_hub/
     __init__.py
     _metadata.py
     backend/
@@ -42,9 +42,9 @@ src/
 **`pyproject.toml`** -- Based on Agent Catalog App reference pattern:
 ```toml
 [project]
-name = "scgp-agent-hub"
+name = "agent-hub"
 dynamic = ["version"]
-description = "SCGP Agent Chat Hub - Multi-agent catalog with chat and memory"
+description = "Agent Chat Hub - Multi-agent catalog with chat and memory"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -65,33 +65,33 @@ dev = [
 ]
 
 [tool.apx.metadata]
-app-name = "scgp-agent-hub"
-app-slug = "scgp_agent_hub"
-app-entrypoint = "scgp_agent_hub.backend.app:app"
+app-name = "agent-hub"
+app-slug = "agent_hub"
+app-entrypoint = "agent_hub.backend.app:app"
 api-prefix = "/api/v1"
-metadata-path = "src/scgp_agent_hub/_metadata.py"
+metadata-path = "src/agent_hub/_metadata.py"
 
 [tool.apx.ui]
-root = "src/scgp_agent_hub/ui"
+root = "src/agent_hub/ui"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 ```
 
-**`src/scgp_agent_hub/_metadata.py`**:
+**`src/agent_hub/_metadata.py`**:
 ```python
 api_prefix = "/api/v1"
 dist_dir = "__dist__"
 ```
 
-**`src/scgp_agent_hub/backend/core/auth.py`** -- Based on `Agent Catalog App/src/agent_catalog_app/backend/core/auth.py`:
+**`src/agent_hub/backend/core/auth.py`** -- Based on `Agent Catalog App/src/agent_catalog_app/backend/core/auth.py`:
 - `_resolve_user_email(request)` extracts from `X-Forwarded-Email` header or Databricks CLI
 - `_get_user_role(session, email)` looks up role from `user_roles` table
 - `require_role(*allowed_roles)` dependency factory
 - First-user-is-admin pattern
 
-**`src/scgp_agent_hub/backend/core/lakebase.py`** -- Based on `Agent Catalog App/src/agent_catalog_app/backend/core/lakebase.py`:
+**`src/agent_hub/backend/core/lakebase.py`** -- Based on `Agent Catalog App/src/agent_catalog_app/backend/core/lakebase.py`:
 - `DatabaseConfig` pydantic settings (PGHOST, PGPORT, PGDATABASE, etc.)
 - `_build_engine_url()` with dev (local port) and prod (Lakebase Autoscale) paths
 - `create_db_engine()` with connection pooling and OBO credential refresh
@@ -99,7 +99,7 @@ dist_dir = "__dist__"
 - `_run_migrations_bg()` creates tables via DDL in background thread
 - `LakebaseDependency` type alias for FastAPI dependency injection
 
-**`src/scgp_agent_hub/backend/core/_factory.py`**:
+**`src/agent_hub/backend/core/_factory.py`**:
 - `create_app(routers)` factory function
 - CORS middleware (allow localhost:3000 in dev)
 - WorkspaceClient initialization on startup
@@ -107,7 +107,7 @@ dist_dir = "__dist__"
 - Exception handlers mapping service errors to HTTP status codes
 - Static SPA mount from `__dist__` when present
 
-**`src/scgp_agent_hub/backend/app.py`**:
+**`src/agent_hub/backend/app.py`**:
 ```python
 from .core import create_app
 from .router import router
@@ -115,7 +115,7 @@ from .router import router
 app = create_app(routers=[router])
 ```
 
-**`src/scgp_agent_hub/backend/router.py`**:
+**`src/agent_hub/backend/router.py`**:
 ```python
 from fastapi import APIRouter
 
@@ -127,7 +127,7 @@ async def me(request: Request):
     ...
 ```
 
-**`src/scgp_agent_hub/backend/services/base.py`**:
+**`src/agent_hub/backend/services/base.py`**:
 ```python
 class NotFoundError(Exception): ...
 class ForbiddenError(Exception): ...
@@ -148,7 +148,7 @@ class ConflictError(Exception): ...
 ### Directory Structure
 
 ```
-src/scgp_agent_hub/ui/
+src/agent_hub/ui/
   index.html
   main.tsx
   vite.config.ts
@@ -183,7 +183,7 @@ src/scgp_agent_hub/ui/
 **`package.json`**:
 ```json
 {
-  "name": "scgp-agent-hub-ui",
+  "name": "agent-hub-ui",
   "private": true,
   "type": "module",
   "scripts": {
@@ -250,7 +250,7 @@ export default defineConfig({
 });
 ```
 
-**`styles/globals.css`** -- Copy design tokens from Phase 0, adapting the Agent Catalog App pattern with SCGP customizations.
+**`styles/globals.css`** -- Copy design tokens from Phase 0, adapting the Agent Catalog App pattern with project-specific customizations.
 
 **`lib/api.ts`** -- Axios instance + TanStack Query hooks:
 ```typescript
@@ -282,7 +282,7 @@ export const queryKeys = {
 
 ### Backend
 
-Implement in `src/scgp_agent_hub/backend/core/auth.py`:
+Implement in `src/agent_hub/backend/core/auth.py`:
 
 1. `_resolve_user_email(request)`:
    - Check `X-Forwarded-Email` header (Databricks Apps deployed mode)
@@ -318,7 +318,7 @@ Create `lib/hooks/useCurrentUser.ts`:
 
 ### Backend
 
-Implement in `src/scgp_agent_hub/backend/core/lakebase.py` following the Agent Catalog App pattern.
+Implement in `src/agent_hub/backend/core/lakebase.py` following the Agent Catalog App pattern.
 
 **DDL Statements** (in `_ALEMBIC_ONLY_TABLES_DDL` list):
 
@@ -423,7 +423,7 @@ DATABRICKS_CONFIG_PROFILE=chatbot_template
 # PGDATABASE=databricks_postgres
 
 # Lakebase project config
-LAKEBASE_PROJECT_ID=scgp-agent-hub
+LAKEBASE_PROJECT_ID=agent-hub
 LAKEBASE_BRANCH_ID=production
 
 # App config
@@ -433,7 +433,7 @@ LOG_LEVEL=DEBUG
 **`databricks.yml`**:
 ```yaml
 bundle:
-  name: scgp-agent-hub
+  name: agent-hub
 
 variables:
   workspace_host:
@@ -441,10 +441,10 @@ variables:
     default: https://YOUR_WORKSPACE.cloud.databricks.com
   app_name:
     description: Application display name
-    default: scgp-agent-hub
+    default: agent-hub
   lakebase_project_id:
     description: Lakebase project ID
-    default: scgp-agent-hub
+    default: agent-hub
   lakebase_branch_id:
     description: Lakebase branch ID
     default: production
@@ -456,7 +456,7 @@ targets:
     workspace:
       host: https://YOUR_WORKSPACE.cloud.databricks.com
     variables:
-      app_name: scgp-agent-hub-dev
+      app_name: agent-hub-dev
       lakebase_branch_id: development
 ```
 
@@ -464,14 +464,14 @@ targets:
 ```yaml
 command:
   - uvicorn
-  - scgp_agent_hub.backend.app:app
+  - agent_hub.backend.app:app
   - --host=0.0.0.0
   - --port=8000
 env:
   - name: LOG_LEVEL
     value: INFO
   - name: LAKEBASE_PROJECT_ID
-    value: scgp-agent-hub
+    value: agent-hub
   - name: LAKEBASE_BRANCH_ID
     value: production
 ```
@@ -486,8 +486,8 @@ env:
 
 ## Phase 1 Completion Checklist
 
-- [ ] Backend starts with `uvicorn scgp_agent_hub.backend.app:app --reload`
-- [ ] Frontend starts with `npm run dev` (in `src/scgp_agent_hub/ui/`)
+- [ ] Backend starts with `uvicorn agent_hub.backend.app:app --reload`
+- [ ] Frontend starts with `npm run dev` (in `src/agent_hub/ui/`)
 - [ ] Vite proxy forwards `/api` to backend
 - [ ] `GET /api/v1/me` returns user info
 - [ ] Lakebase tables created on startup

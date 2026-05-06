@@ -24,8 +24,8 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from scgp_agent_hub.backend.services import pin_service as ps
-from scgp_agent_hub.backend.services.base import (
+from agent_hub.backend.services import pin_service as ps
+from agent_hub.backend.services.base import (
     ConflictError,
     NotFoundError,
     ValidationError,

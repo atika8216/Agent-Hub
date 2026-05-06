@@ -101,7 +101,7 @@ You need to replace the author's workspace / warehouse / Lakebase / admin-email 
 
 ```yaml
 variables:
-  scgp_admin_warehouse_id:
+  agent_hub_admin_warehouse_id:
     default: <YOUR_SQL_WAREHOUSE_ID>           # e.g. 7b7cd1e7e17a3862
   workspace_host:
     default: https://<your-workspace>.cloud.databricks.com
@@ -131,7 +131,7 @@ env:
     value: production
   - name: BOOTSTRAP_ADMIN_EMAILS
     value: <your.email>@<your-domain>          # app owner(s), comma-separated
-  - name: SCGP_ADMIN_WAREHOUSE_ID
+  - name: AGENT_HUB_ADMIN_WAREHOUSE_ID
     value: "<YOUR_SQL_WAREHOUSE_ID>"           # must match databricks.yml
 ```
 
@@ -149,7 +149,7 @@ bun install          # or: npm install
 
 ### 5 · Build the frontend
 
-The Databricks Apps runtime serves the pre-built React bundle from `src/scgp_agent_hub/__dist__/`. Build it locally before deploying:
+The Databricks Apps runtime serves the pre-built React bundle from `src/agent_hub/__dist__/`. Build it locally before deploying:
 
 ```bash
 bun run build        # or: npm run build
@@ -167,9 +167,9 @@ databricks bundle deploy --target dev
 databricks bundle deploy --target prod
 ```
 
-This uploads the source, creates the Databricks App (`scgp-agent-hub-dev` or `scgp-agent-hub`), grants you `CAN_MANAGE`, and starts the app.
+This uploads the source, creates the Databricks App (`agent-hub-dev` or `agent-hub`), grants you `CAN_MANAGE`, and starts the app.
 
-Open the app in the workspace UI: **Compute → Apps → `scgp-agent-hub[-dev]`**.
+Open the app in the workspace UI: **Compute → Apps → `agent-hub[-dev]`**.
 
 ### 7 · First-login consent (OBO)
 
@@ -201,7 +201,7 @@ uv sync
 bun install
 
 # Backend (FastAPI, hot reload)
-uvicorn scgp_agent_hub.backend.app:app --reload
+uvicorn agent_hub.backend.app:app --reload
 
 # Frontend (Vite dev server)
 bun run dev
@@ -224,7 +224,7 @@ agent_hub/
 ├── databricks.yml            # Asset Bundle (targets, variables, app resource)
 ├── pyproject.toml            # Python package + apx metadata
 ├── package.json              # UI deps (Bun/npm)
-├── src/scgp_agent_hub/
+├── src/agent_hub/
 │   ├── backend/              # FastAPI app, services, routes
 │   ├── ui/                   # React source (TanStack Router/Query)
 │   └── __dist__/             # Pre-built UI bundle (gitignored locally, shipped on deploy)
@@ -238,7 +238,7 @@ agent_hub/
 ## Troubleshooting / rollback
 
 - **Scope-drift & OBO issues** — [`docs/obo-auth-design.md`](docs/obo-auth-design.md)
-- **Emergency rollback levers** — [`docs/rollback-obo-gaps-2026-04-17.md`](docs/rollback-obo-gaps-2026-04-17.md) documents per-phase disable flags (`SCGP_DISABLE_UC_MCP_DISCOVERY`, `SCGP_DISABLE_UC_MCP_CHAT`, `SCGP_LEGACY_UI`) you can flip via the Databricks App UI without a redeploy.
+- **Emergency rollback levers** — [`docs/rollback-obo-gaps-2026-04-17.md`](docs/rollback-obo-gaps-2026-04-17.md) documents per-phase disable flags (`AGENT_HUB_DISABLE_UC_MCP_DISCOVERY`, `AGENT_HUB_DISABLE_UC_MCP_CHAT`, `AGENT_HUB_LEGACY_UI`) you can flip via the Databricks App UI without a redeploy.
 
 ---
 

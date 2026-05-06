@@ -14,8 +14,8 @@ from __future__ import annotations
 import base64
 import json
 
-from scgp_agent_hub.backend.services.catalog_service import _extract_required_scope
-from scgp_agent_hub.backend.services.debug_service import (
+from agent_hub.backend.services.catalog_service import _extract_required_scope
+from agent_hub.backend.services.debug_service import (
     _jwt_payload,
     _scopes_from_claim,
 )

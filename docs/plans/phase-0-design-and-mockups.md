@@ -8,7 +8,7 @@
 
 ## Step 0.1: Create `.impeccable.md` Design Context
 
-Create the file `.impeccable.md` at the project root with the design context for the SCGP Agent Chat Hub.
+Create the file `.impeccable.md` at the project root with the design context for the Agent Chat Hub.
 
 ### Design Context
 
@@ -16,7 +16,7 @@ Create the file `.impeccable.md` at the project root with the design context for
 ## Design Context
 
 ### Users
-- **Primary**: SCGP internal teams (data engineers, data scientists, business analysts) who
+- **Primary**: Internal teams (data engineers, data scientists, business analysts) who
   interact with Databricks AI agents for their daily tasks.
 - **Secondary**: Admins who manage which agents are visible and configure memory settings.
 - **Context**: Desktop-first, used during work hours in an office setting. Users may have
@@ -65,7 +65,7 @@ Use the Stitch MCP to create a project and establish the design system.
 1. **Create Stitch project**:
    ```
    CallMcpTool: user-stitch / create_project
-   Arguments: { "title": "SCGP Agent Chat Hub" }
+   Arguments: { "title": "Agent Chat Hub" }
    ```
 
 2. **Create design system** with these parameters:
@@ -74,7 +74,7 @@ Use the Stitch MCP to create a project and establish the design system.
    Arguments: {
      "projectId": "<project_id from step 1>",
      "designSystem": {
-       "displayName": "SCGP Agent Hub Design System",
+       "displayName": "Agent Hub Design System",
        "theme": {
          "colorMode": "DARK",
          "headlineFont": "GEIST",
@@ -122,7 +122,7 @@ Design a dark-themed desktop Agent Catalog page for an internal AI agent hub.
 
 Layout:
 - Left sidebar (240px): navigation with sections "Catalog" (active), "Chat", "Admin". 
-  Show user avatar and "SCGP Agent Hub" logo at top.
+  Show user avatar and "Agent Hub" logo at top.
 - Main content area with a header row: page title "Agent Catalog", search input, 
   and filter chips for agent type.
 - Below: a grid of agent cards (3 columns).
@@ -151,7 +151,7 @@ Layout:
 - Same left sidebar as catalog page, but "Catalog" still active with breadcrumb 
   "Catalog > Supply Chain Forecaster"
 - Top section: Agent name "Supply Chain Forecaster", description paragraph, 
-  owner info "owned by data-platform-team@scgp.com", 
+  owner info "owned by data-platform-team@example.com", 
   overall access badge showing green "Access granted"
 - Prominent "Start Chat" button (primary red-orange, full width of top section)
 - Below: "Sub-agents & Components" section header

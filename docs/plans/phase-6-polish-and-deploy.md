@@ -127,7 +127,7 @@ Finalize `databricks.yml`:
 
 ```yaml
 bundle:
-  name: scgp-agent-hub
+  name: agent-hub
 
 variables:
   workspace_host:
@@ -135,10 +135,10 @@ variables:
     default: https://YOUR_WORKSPACE.cloud.databricks.com
   app_name:
     description: Application name
-    default: scgp-agent-hub
+    default: agent-hub
   lakebase_project_id:
     description: Lakebase project ID
-    default: scgp-agent-hub
+    default: agent-hub
   lakebase_branch_id:
     description: Lakebase branch ID
     default: production
@@ -151,7 +151,7 @@ targets:
       host: https://YOUR_WORKSPACE.cloud.databricks.com
       profile: YOUR_PROFILE
     variables:
-      app_name: scgp-agent-hub-dev
+      app_name: agent-hub-dev
       lakebase_branch_id: development
 
   staging:
@@ -159,7 +159,7 @@ targets:
     workspace:
       host: https://YOUR_STAGING_WORKSPACE.cloud.databricks.com
     variables:
-      app_name: scgp-agent-hub-staging
+      app_name: agent-hub-staging
       lakebase_branch_id: staging
 
   prod:
@@ -167,19 +167,19 @@ targets:
     workspace:
       host: https://YOUR_PROD_WORKSPACE.cloud.databricks.com
     variables:
-      app_name: scgp-agent-hub
+      app_name: agent-hub
       lakebase_branch_id: production
 
 resources:
   apps:
-    scgp_agent_hub:
+    agent_hub:
       name: ${var.app_name}
-      description: "SCGP Agent Chat Hub"
+      description: "Agent Chat Hub"
       source_code_path: .
       config:
         command:
           - uvicorn
-          - scgp_agent_hub.backend.app:app
+          - agent_hub.backend.app:app
           - --host=0.0.0.0
           - --port=8000
         env:
@@ -206,12 +206,12 @@ Finalize `app.yaml`:
 ```yaml
 command:
   - uvicorn
-  - scgp_agent_hub.backend.app:app
+  - agent_hub.backend.app:app
   - --host=0.0.0.0
   - --port=8000
 env:
   - name: LAKEBASE_PROJECT_ID
-    value: scgp-agent-hub
+    value: agent-hub
   - name: LAKEBASE_BRANCH_ID
     value: production
   - name: LOG_LEVEL
@@ -226,7 +226,7 @@ Create `scripts/build.sh`:
 set -euo pipefail
 
 # Build frontend
-cd src/scgp_agent_hub/ui
+cd src/agent_hub/ui
 npm ci
 npm run build
 cd ../../..
@@ -278,7 +278,7 @@ Execute in order:
 1. `databricks bundle validate` -- verify config
 2. `databricks bundle deploy` -- deploy resources
 3. Wait for Lakebase provisioning (first deploy, may take several minutes)
-4. `databricks bundle run scgp_agent_hub` -- start the app
+4. `databricks bundle run agent_hub` -- start the app
 5. `databricks bundle summary` -- verify deployment
 6. Open the app URL and test end-to-end
 

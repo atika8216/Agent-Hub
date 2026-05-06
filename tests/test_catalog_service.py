@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from scgp_agent_hub.backend.models import SubComponentType
-from scgp_agent_hub.backend.services import catalog_service as cs
+from agent_hub.backend.models import SubComponentType
+from agent_hub.backend.services import catalog_service as cs
 
 
 class TestCoerceSubComponentType:

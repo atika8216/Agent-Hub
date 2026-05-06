@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Agent-type audit for ``catalog_config`` rows.
 
-Part of Phase 1 of the SCGP Agent Hub master roadmap. Reads every row in
+Part of Phase 1 of the Agent Hub master roadmap. Reads every row in
 ``catalog_config`` and flags mismatches between the endpoint-name prefix
 (``uc:`` / ``mcp:`` / ``genie:`` / plain) and the persisted
 ``agent_type`` column.

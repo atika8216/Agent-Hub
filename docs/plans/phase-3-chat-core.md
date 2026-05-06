@@ -10,7 +10,7 @@
 
 ### Step 3a.1: Chat Service
 
-Create `src/scgp_agent_hub/backend/services/chat_service.py`.
+Create `src/agent_hub/backend/services/chat_service.py`.
 
 **`stream_chat(endpoint_name, conversation_id, user_message, user_email, ws, session)`**:
 1. Verify user has access via OBO (call `catalog_service.check_access`)
