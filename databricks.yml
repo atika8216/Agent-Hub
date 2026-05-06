@@ -1,8 +1,12 @@
-# NOTE: bundle.name and the app_name / lakebase_project_id defaults below
-# intentionally retain the legacy "scgp-agent-hub" identifier. These point at
-# the existing deployed Databricks App and Lakebase project; renaming them
-# would create a NEW app at a new URL and disconnect the running app from
-# its conversation/pin/chart history. See README "Deploy" section.
+# NOTE: bundle.name and the app_name default below intentionally retain the
+# legacy "scgp-agent-hub" identifier. These point at the existing deployed
+# Databricks App; renaming them would create a NEW app at a new URL and
+# disconnect the running app from its conversation/pin/chart history.
+#
+# Runtime env vars (LAKEBASE_*, LOG_LEVEL, BOOTSTRAP_ADMIN_EMAILS,
+# AGENT_HUB_ADMIN_WAREHOUSE_ID) live in `app.yaml` -- the bundle CLI does NOT
+# support per-app env in this schema (any `config` block emits "unknown field"
+# and is silently dropped). See README "Deploy" section.
 
 bundle:
   name: scgp-agent-hub
@@ -29,13 +33,6 @@ sync:
     - ".env.example"
 
 variables:
-  # SQL warehouse used by the app SP for UC tag discovery
-  # (system.information_schema.function_tags / connection_tags). Same workspace
-  # for dev+prod in this bundle; override per target if workspaces diverge.
-  agent_hub_admin_warehouse_id:
-    description: >-
-      Warehouse ID for AGENT_HUB_ADMIN_WAREHOUSE_ID (UC MCP/HTTP catalog discovery).
-    default: 7b7cd1e7e17a3862
   workspace_host:
     description: Workspace URL
     default: https://fevm-aan-demo-workspace.cloud.databricks.com
@@ -43,13 +40,6 @@ variables:
     description: Application display name
     # Legacy identifier preserved (see top-of-file note).
     default: scgp-agent-hub
-  lakebase_project_id:
-    description: Lakebase project ID
-    # Legacy identifier preserved (see top-of-file note).
-    default: scgp-agent-hub
-  lakebase_branch_id:
-    description: Lakebase branch ID
-    default: production
 
 targets:
   dev:
@@ -61,7 +51,6 @@ targets:
     variables:
       # Legacy identifier preserved (see top-of-file note).
       app_name: scgp-agent-hub-dev
-      lakebase_branch_id: development
 
   prod:
     mode: production
@@ -71,7 +60,6 @@ targets:
     variables:
       # Legacy identifier preserved (see top-of-file note).
       app_name: scgp-agent-hub
-      lakebase_branch_id: production
 
 resources:
   apps:
@@ -79,10 +67,6 @@ resources:
       name: ${var.app_name}
       description: "Agent Chat Hub - Multi-agent catalog with chat and memory"
       source_code_path: ${workspace.file_path}
-      config:
-        env:
-          - name: AGENT_HUB_ADMIN_WAREHOUSE_ID
-            value: ${var.agent_hub_admin_warehouse_id}
       # Granted user OAuth scopes for OBO. Keep aligned with
       # app.yaml -> user_authorization.scopes.
       # NOTE: Two scopes are intentionally omitted because the bundle CLI

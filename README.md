@@ -95,49 +95,58 @@ cd agent_hub
 
 ### 3 · Configure for your workspace
 
-You need to replace the author's workspace / warehouse / Lakebase / admin-email values with your own. Two files, three variables in each.
+You will edit two files. **`app.yaml`** holds runtime env (Lakebase, warehouse, admin emails) — this is the only place the Databricks Apps runtime reads env from. **`databricks.yml`** holds bundle-level config (workspace host, CLI profile, app slug) — it controls where and as what the app gets deployed.
 
-**`databricks.yml`** — update the `variables` block and both target `workspace` blocks:
+> **Why two files?** The bundle CLI does not currently support setting per-app env in `databricks.yml` (any `config.env` block emits `unknown field: config` and is silently dropped). Until that lands, `app.yaml` is authoritative for env.
+
+**`app.yaml`** — replace the author's values in the `env:` block:
+
+```yaml
+env:
+  - name: "LAKEBASE_PROJECT_ID"
+    value: "<your-lakebase-project>"          # must already exist in your workspace
+  - name: "LAKEBASE_BRANCH_ID"
+    value: "production"
+  - name: "LOG_LEVEL"
+    value: "INFO"
+  - name: "BOOTSTRAP_ADMIN_EMAILS"
+    value: "<your.email>@<your-domain>"        # comma-separated, app owner(s)
+  - name: "AGENT_HUB_ADMIN_WAREHOUSE_ID"
+    value: "<YOUR_SQL_WAREHOUSE_ID>"           # e.g. 7b7cd1e7e17a3862
+```
+
+> **Two formatting rules the Apps runtime is strict about:**
+>
+> 1. Quote every `name`/`value` (`"LAKEBASE_PROJECT_ID"`, `"scgp-agent-hub"`). Unquoted hyphenated strings can be misparsed.
+> 2. Do **not** put comments BETWEEN `env:` and the first `- name:` entry. The runtime YAML parser silently drops the entire env block if leading comments precede the first list item. Comments after each item are fine.
+
+**`databricks.yml`** — update workspace / app-slug / profile:
 
 ```yaml
 variables:
-  agent_hub_admin_warehouse_id:
-    default: <YOUR_SQL_WAREHOUSE_ID>           # e.g. 7b7cd1e7e17a3862
   workspace_host:
     default: https://<your-workspace>.cloud.databricks.com
-  lakebase_project_id:
-    default: <your-lakebase-project>
-  lakebase_branch_id:
-    default: production
+  app_name:
+    default: <your-app-slug>                   # e.g. agent-hub
 
 targets:
   dev:
     workspace:
       host: https://<your-workspace>.cloud.databricks.com
       profile: my-workspace                    # the CLI profile from step 1
+    variables:
+      app_name: <your-app-slug>-dev
   prod:
     workspace:
       host: https://<your-workspace>.cloud.databricks.com
       profile: my-workspace
-```
-
-**`app.yaml`** — update the `env` block:
-
-```yaml
-env:
-  - name: LAKEBASE_PROJECT_ID
-    value: <your-lakebase-project>
-  - name: LAKEBASE_BRANCH_ID
-    value: production
-  - name: BOOTSTRAP_ADMIN_EMAILS
-    value: <your.email>@<your-domain>          # app owner(s), comma-separated
-  - name: AGENT_HUB_ADMIN_WAREHOUSE_ID
-    value: "<YOUR_SQL_WAREHOUSE_ID>"           # must match databricks.yml
+    variables:
+      app_name: <your-app-slug>
 ```
 
 > **Finding these values**
 > - *Warehouse ID*: **SQL Warehouses** → your warehouse → ID in the URL (`/sql/warehouses/<id>`)
-> - *Lakebase project / branch*: **Compute** → **Lakebase** → your instance
+> - *Lakebase project / branch*: **Compute** → **Lakebase** → your project (must already exist; create one first if needed)
 > - *Workspace host*: the `https://...cloud.databricks.com` URL in your browser
 
 ### 4 · Install dependencies
@@ -220,7 +229,7 @@ cp .env.example .env
 
 ```
 agent_hub/
-├── app.yaml                  # Databricks Apps runtime config (command, env, scopes, health)
+├── app.yaml                  # Databricks Apps runtime config (command, env, OAuth scopes, health)
 ├── databricks.yml            # Asset Bundle (targets, variables, app resource)
 ├── pyproject.toml            # Python package + apx metadata
 ├── package.json              # UI deps (Bun/npm)

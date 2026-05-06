@@ -8,34 +8,34 @@ command:
   - --workers
   - "2"
 
+# Runtime env vars. The Databricks Apps runtime reads this `env:` block at
+# startup; it is the SINGLE SOURCE OF TRUTH for app env. The bundle CLI does
+# NOT support setting env vars on apps via databricks.yml (the `config` field
+# is silently dropped at validate time -- see "unknown field: config" warning),
+# so do NOT duplicate values into databricks.yml.
+#
+# IMPORTANT: keep the env list free of leading comments BETWEEN `env:` and the
+# first `- name:` entry. The Apps runtime YAML parser silently drops the
+# entire block if comments precede the first list item.
+#
+# Phase rollback levers (default-off, docs/rollback-obo-gaps-2026-04-17.md):
+#   AGENT_HUB_DISABLE_UC_MCP_DISCOVERY=1   Phase 1 (disable UC-tag discovery)
+#   AGENT_HUB_DISABLE_UC_MCP_CHAT=1        Phase 2 (revert HTTP/MCP chat to stub)
+#   AGENT_HUB_LEGACY_UI=1                  Phase 3 (lock UI to legacy dark palette)
+# Set those via the Databricks App UI -> Environment if you need to toggle them.
+#
+# For local dev (`uvicorn agent_hub.backend.app:app` directly), copy
+# .env.example to .env -- pydantic-settings loads it automatically.
 env:
-  # NOTE: LAKEBASE_PROJECT_ID intentionally retains the legacy
-  # "scgp-agent-hub" value. It points at the existing Lakebase project
-  # holding all conversation/pin/chart history; renaming it would
-  # disconnect the running app from its data. See README "Deploy".
-  - name: LAKEBASE_PROJECT_ID
-    value: scgp-agent-hub
-  - name: LAKEBASE_BRANCH_ID
-    value: production
-  - name: LOG_LEVEL
-    value: INFO
-  # Comma-separated emails allowed through the `/api/v1/debug/me/scopes`
-  # diagnostic gate even when Lakebase is unavailable. See
-  # docs/obo-auth-design.md §14. Keep this short (app owner only).
-  - name: BOOTSTRAP_ADMIN_EMAILS
-    value: atika.antarasen@databricks.com
-  # Phase rollback levers (all default-off, docs/rollback-obo-gaps-2026-04-17.md).
-  # Set the corresponding env var to "1" in the Databricks App UI to activate:
-  #   * AGENT_HUB_DISABLE_UC_MCP_DISCOVERY=1 — Phase 1 (disable UC-tag discovery).
-  #   * AGENT_HUB_DISABLE_UC_MCP_CHAT=1      — Phase 2 (revert HTTP/MCP chat to stub).
-  #   * AGENT_HUB_LEGACY_UI=1                — Phase 3 (lock UI to legacy dark palette).
-  # SQL warehouse used by the app SP for UC tag discovery
-  # (system.information_schema.function_tags / connection_tags). The bundle
-  # also sets this via `resources.apps.*.config.env`, but the Databricks
-  # Apps runtime sources env vars from app.yaml, so we duplicate it here
-  # to guarantee propagation. Keep the value aligned with
-  # databricks.yml -> variables.agent_hub_admin_warehouse_id.
-  - name: AGENT_HUB_ADMIN_WAREHOUSE_ID
+  - name: "LAKEBASE_PROJECT_ID"
+    value: "scgp-agent-hub"
+  - name: "LAKEBASE_BRANCH_ID"
+    value: "production"
+  - name: "LOG_LEVEL"
+    value: "INFO"
+  - name: "BOOTSTRAP_ADMIN_EMAILS"
+    value: "atika.antarasen@databricks.com"
+  - name: "AGENT_HUB_ADMIN_WAREHOUSE_ID"
     value: "7b7cd1e7e17a3862"
 
 user_authorization:
