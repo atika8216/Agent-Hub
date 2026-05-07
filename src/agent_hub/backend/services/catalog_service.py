@@ -398,8 +398,8 @@ def _load_tiles_map(
 
     Agent Bricks exposes ``GET /api/2.0/tiles`` which returns the same display
     names, descriptions, and MAS/KA classification the Agent Bricks UI shows.
-    Only 4 of the ~16 custom endpoints in ``fevm-aan-demo`` are actually
-    tile-backed (2 MAS + 2 KA); the rest are plain custom serving endpoints.
+    Only a subset of custom endpoints in a typical workspace are actually
+    tile-backed (a few MAS + KA); the rest are plain custom serving endpoints.
 
     Tries the user's OBO client first. In Databricks Apps the OBO token
     typically doesn't include the scope the tiles API requires

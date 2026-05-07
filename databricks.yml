@@ -1,15 +1,14 @@
-# NOTE: bundle.name and the app_name default below intentionally retain the
-# legacy "scgp-agent-hub" identifier. These point at the existing deployed
-# Databricks App; renaming them would create a NEW app at a new URL and
-# disconnect the running app from its conversation/pin/chart history.
+# Bundle config for Agent Hub. Replace every `<your-...>` placeholder with values
+# from your own Databricks workspace before deploying. See README "Deploy" section
+# or run the `installation-helper` skill in your AI IDE to get walked through it.
 #
 # Runtime env vars (LAKEBASE_*, LOG_LEVEL, BOOTSTRAP_ADMIN_EMAILS,
 # AGENT_HUB_ADMIN_WAREHOUSE_ID) live in `app.yaml` -- the bundle CLI does NOT
 # support per-app env in this schema (any `config` block emits "unknown field"
-# and is silently dropped). See README "Deploy" section.
+# and is silently dropped).
 
 bundle:
-  name: scgp-agent-hub
+  name: agent-hub
 
 sync:
   exclude:
@@ -35,31 +34,28 @@ sync:
 variables:
   workspace_host:
     description: Workspace URL
-    default: https://fevm-aan-demo-workspace.cloud.databricks.com
+    default: https://<your-workspace>.cloud.databricks.com
   app_name:
     description: Application display name
-    # Legacy identifier preserved (see top-of-file note).
-    default: scgp-agent-hub
+    default: agent-hub
 
 targets:
   dev:
     mode: development
     default: true
     workspace:
-      host: https://fevm-aan-demo-workspace.cloud.databricks.com
-      profile: fevm-aan-demo
+      host: https://<your-workspace>.cloud.databricks.com
+      profile: <your-profile>
     variables:
-      # Legacy identifier preserved (see top-of-file note).
-      app_name: scgp-agent-hub-dev
+      app_name: agent-hub-dev
 
   prod:
     mode: production
     workspace:
-      host: https://fevm-aan-demo-workspace.cloud.databricks.com
-      profile: fevm-aan-demo
+      host: https://<your-workspace>.cloud.databricks.com
+      profile: <your-profile>
     variables:
-      # Legacy identifier preserved (see top-of-file note).
-      app_name: scgp-agent-hub
+      app_name: agent-hub
 
 resources:
   apps:

@@ -11,7 +11,7 @@ Deploy window covered:
   four user-reported issues (Genie not appearing on /admin/catalog,
   owners denied access, Discover hang, MAS raw endpoint names).
 
-Target workspace for both deploys: `fevm-aan-demo`.
+Target workspace for both deploys: `<your-profile>`.
 
 Use this doc if any of the following show up after either deploy:
 
@@ -58,7 +58,7 @@ Snapshot at the time of deploy:
 
 ### 0.2 Effective scopes from Databricks Apps API
 
-`databricks apps get agent-hub --profile fevm-aan-demo` should show:
+`databricks apps get agent-hub --profile <your-profile>` should show:
 
 ```json
 {
@@ -135,13 +135,13 @@ Execute in order. Each step is idempotent; you can safely re-run.
 
 ```bash
 # The previous-state bundle had no P2a/P2b/P3 code and no bootstrap-admin env.
-databricks bundle deploy --target dev  --profile fevm-aan-demo
-databricks bundle run    agent_hub --target dev  --profile fevm-aan-demo
+databricks bundle deploy --target dev  --profile <your-profile>
+databricks bundle run    agent_hub --target dev  --profile <your-profile>
 # Smoke-check dev
-curl -I https://agent-hub-dev-7474650134110831.aws.databricksapps.com/api/v1/health/live
+curl -I https://agent-hub-dev-<workspace-id>.aws.databricksapps.com/api/v1/health/live
 
-databricks bundle deploy --target prod --profile fevm-aan-demo
-databricks bundle run    agent_hub --target prod --profile fevm-aan-demo
+databricks bundle deploy --target prod --profile <your-profile>
+databricks bundle run    agent_hub --target prod --profile <your-profile>
 ```
 
 ### 1.3 Re-consent (only if scopes changed on the way back)
@@ -198,7 +198,7 @@ hidden Genie rows and a small UI note on `/admin/catalog` describing
 the new default. See discussion trail in this session + the code
 comment in `_default_visible_for`.
 
-**What actually changed on the database.** On `fevm-aan-demo` prod the
+**What actually changed on the database.** On `<your-profile>` prod the
 migration ran but touched **0 rows** — `list_genie_spaces` is a
 direct pass-through to `/api/2.0/genie/spaces` and has never persisted
 spaces into `catalog_config`. The migration is defensive: it
@@ -237,11 +237,11 @@ already-visible rows as-is.
 ### 4.3 Redeploy
 
 ```bash
-databricks bundle deploy --target prod -p fevm-aan-demo
-databricks bundle run    agent_hub --target prod -p fevm-aan-demo
+databricks bundle deploy --target prod -p <your-profile>
+databricks bundle run    agent_hub --target prod -p <your-profile>
 
 # Optional — verify the migration infra was removed from logs:
-databricks apps logs agent-hub -p fevm-aan-demo 2>&1 | grep -i "Data migration"
+databricks apps logs agent-hub -p <your-profile> 2>&1 | grep -i "Data migration"
 # Expected: no matches.
 ```
 
@@ -307,11 +307,11 @@ DELETE FROM catalog_config WHERE endpoint_name LIKE 'genie:%';
 ### 5.3 Redeploy
 
 ```bash
-databricks bundle deploy --target prod -p fevm-aan-demo
-databricks bundle run    agent_hub --target prod -p fevm-aan-demo
+databricks bundle deploy --target prod -p <your-profile>
+databricks bundle run    agent_hub --target prod -p <your-profile>
 
 # Verify discover still works but no longer logs genie upserts:
-databricks apps logs agent-hub -p fevm-aan-demo 2>&1 | grep -E 'Discovery complete|Genie Space'
+databricks apps logs agent-hub -p <your-profile> 2>&1 | grep -E 'Discovery complete|Genie Space'
 ```
 
 ### 5.4 Partial rollbacks (keep what works)
@@ -426,8 +426,8 @@ git checkout HEAD~1 -- \
 rm tests/test_chat_streaming.py
 
 # 3. Redeploy.
-databricks bundle deploy --target prod -p fevm-aan-demo
-databricks bundle run    agent_hub --target prod -p fevm-aan-demo
+databricks bundle deploy --target prod -p <your-profile>
+databricks bundle run    agent_hub --target prod -p <your-profile>
 ```
 
 ### 6.4 No migration, no scope changes
@@ -542,12 +542,12 @@ ALTER TABLE conversations DROP COLUMN IF EXISTS metadata_json;
 ### 7.4 Redeploy
 
 ```bash
-databricks bundle deploy --target prod -p fevm-aan-demo
-databricks bundle run    agent_hub --target prod -p fevm-aan-demo
+databricks bundle deploy --target prod -p <your-profile>
+databricks bundle run    agent_hub --target prod -p <your-profile>
 
 # Smoke-check: a Genie card should open externally again, MAS chat
 # should still flow tokens (or single-shot if upstream doesn't stream).
-databricks apps logs agent-hub -p fevm-aan-demo 2>&1 | \
+databricks apps logs agent-hub -p <your-profile> 2>&1 | \
   grep -E 'Genie|Streaming|Simulated chunked'
 # Expected after rollback: no "Genie ..." entries, no "Simulated
 # chunked stream applied" entries.
@@ -684,8 +684,8 @@ DELETE FROM admin_settings WHERE key = 'uc_tag_config';
 ### 8.4 Redeploy
 
 ```bash
-databricks bundle deploy --target prod -p fevm-aan-demo
-databricks bundle run    agent_hub --target prod -p fevm-aan-demo
+databricks bundle deploy --target prod -p <your-profile>
+databricks bundle run    agent_hub --target prod -p <your-profile>
 
 # Smoke-check
 curl -sS "$APP_URL/api/v1/agents" -H "Cookie: ..." | jq '.[] | .endpoint_name' \
@@ -821,8 +821,8 @@ databricks apps update agent-hub \
 
 # Then, on a feature branch:
 git revert <deploy-G-commits>
-databricks bundle deploy --target prod --profile fevm-aan-demo
-databricks apps deploy agent-hub --source-code-path ... --profile fevm-aan-demo
+databricks bundle deploy --target prod --profile <your-profile>
+databricks apps deploy agent-hub --source-code-path ... --profile <your-profile>
 ```
 
 ### 9.5 Partial rollbacks (keep what works)
@@ -970,7 +970,7 @@ the incident:
 
 ## 11. Deploy I — MAS names, sub-components, native detail page
 
-Deployed: 2026-04-27 (prod target `fevm-aan-demo`).
+Deployed: 2026-04-27 (prod target `<your-profile>`).
 
 ### 11.1 What changed
 

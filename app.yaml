@@ -28,15 +28,15 @@ command:
 # .env.example to .env -- pydantic-settings loads it automatically.
 env:
   - name: "LAKEBASE_PROJECT_ID"
-    value: "scgp-agent-hub"
+    value: "<your-lakebase-project>"
   - name: "LAKEBASE_BRANCH_ID"
     value: "production"
   - name: "LOG_LEVEL"
     value: "INFO"
   - name: "BOOTSTRAP_ADMIN_EMAILS"
-    value: "atika.antarasen@databricks.com"
+    value: "<your.email>@<your-domain>"
   - name: "AGENT_HUB_ADMIN_WAREHOUSE_ID"
-    value: "7b7cd1e7e17a3862"
+    value: "<your-warehouse-id>"
 
 user_authorization:
   scopes:

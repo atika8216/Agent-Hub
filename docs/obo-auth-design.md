@@ -7,7 +7,7 @@
 > the OBO-then-Service-Principal fallback pattern, current scope drift,
 > and open follow-ups (with Slack evidence).
 >
-> **Status:** reflects `fevm-aan-demo` prod as of 2026-04-17.
+> **Status:** reflects `<your-profile>` prod as of 2026-04-17.
 
 ---
 
@@ -343,10 +343,10 @@ add it to `databricks.yml`.
 
 - `apx dev` does **not** synthesize `X-Forwarded-*` headers. Without the
   token header, `_get_user_ws` returns `app.state.workspace_client`,
-  which is built from the CLI profile (`DATABRICKS_PROFILE=fevm-aan-demo`).
+  which is built from the CLI profile (`DATABRICKS_PROFILE=<your-profile>`).
 - Email comes from `ws.current_user.me().user_name` via
   `_resolve_user_email`.
-- Net effect: *every* local call runs as `atika.antarasen@databricks.com`
+- Net effect: *every* local call runs as `<bootstrap-admin>`
   (or whoever is authed to the profile), with whatever scopes the profile
   token carries. This is why Agent Bricks tiles, UC introspection, etc.
   **work locally** but fail on prod — the CLI-profile token has broader
@@ -912,7 +912,7 @@ response bodies — just shape and latency):
 
 ### 16.6 Operator checklist per deploy
 
-1. Deploy Phase 2 to `fevm-aan-demo` dev with `AGENT_HUB_DISABLE_UC_MCP_CHAT`
+1. Deploy Phase 2 to `<your-profile>` dev with `AGENT_HUB_DISABLE_UC_MCP_CHAT`
    **unset** and confirm the catalog still shows Phase 1's UC/MCP
    rows.
 2. Pick one `uc:` agent and send a prompt — expect a `running` status

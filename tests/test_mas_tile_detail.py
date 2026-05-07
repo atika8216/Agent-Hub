@@ -10,9 +10,8 @@ to close three gaps the Phase 3 redesign surfaced:
 3. ``get_agent_detail`` served stale Lakebase rows without ever refreshing.
 
 The fixture in ``tests/fixtures/rest_multi_agent_supervisor.json`` was
-captured live from the PTTOR Ecosystem Intelligence MAS in
-``fevm-aan-demo``. Any regression in the helper shape will break these
-tests before it ships.
+captured live from a real MAS deployment. Any regression in the helper
+shape will break these tests before it ships.
 """
 
 from __future__ import annotations

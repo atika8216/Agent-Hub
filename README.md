@@ -89,11 +89,13 @@ databricks auth login --host https://<your-workspace>.cloud.databricks.com --pro
 ### 2 · Clone
 
 ```bash
-git clone https://github.com/atika8216/agent_hub.git
-cd agent_hub
+git clone https://github.com/atika8216/Agent-Hub.git
+cd Agent-Hub
 ```
 
 ### 3 · Configure for your workspace
+
+> **Faster path:** If your IDE supports Anthropic Skills (Claude Code, Cursor, etc.), invoke the **`installation-helper`** skill bundled with this repo (under `.claude/skills/installation-helper/`). It walks you through this entire section interactively — discovers your warehouses and Lakebase projects, validates each input, and edits the YAML files for you. The instructions below are the manual fallback.
 
 You will edit two files. **`app.yaml`** holds runtime env (Lakebase, warehouse, admin emails) — this is the only place the Databricks Apps runtime reads env from. **`databricks.yml`** holds bundle-level config (workspace host, CLI profile, app slug) — it controls where and as what the app gets deployed.
 
@@ -112,7 +114,7 @@ env:
   - name: "BOOTSTRAP_ADMIN_EMAILS"
     value: "<your.email>@<your-domain>"        # comma-separated, app owner(s)
   - name: "AGENT_HUB_ADMIN_WAREHOUSE_ID"
-    value: "<YOUR_SQL_WAREHOUSE_ID>"           # e.g. 7b7cd1e7e17a3862
+    value: "<your-warehouse-id>"               # find in SQL Warehouses URL
 ```
 
 > **Two formatting rules the Apps runtime is strict about:**
@@ -127,21 +129,21 @@ variables:
   workspace_host:
     default: https://<your-workspace>.cloud.databricks.com
   app_name:
-    default: <your-app-slug>                   # e.g. agent-hub
+    default: agent-hub                         # change if you want a different slug
 
 targets:
   dev:
     workspace:
       host: https://<your-workspace>.cloud.databricks.com
-      profile: my-workspace                    # the CLI profile from step 1
+      profile: <your-profile>                  # the CLI profile from step 1
     variables:
-      app_name: <your-app-slug>-dev
+      app_name: agent-hub-dev
   prod:
     workspace:
       host: https://<your-workspace>.cloud.databricks.com
-      profile: my-workspace
+      profile: <your-profile>
     variables:
-      app_name: <your-app-slug>
+      app_name: agent-hub
 ```
 
 > **Finding these values**
@@ -179,6 +181,34 @@ databricks bundle deploy --target prod
 This uploads the source, creates the Databricks App (`agent-hub-dev` or `agent-hub`), grants you `CAN_MANAGE`, and starts the app.
 
 Open the app in the workspace UI: **Compute → Apps → `agent-hub[-dev]`**.
+
+### 6.5 · Grant the app's service principal access to Lakebase
+
+The first deploy creates a fresh service principal per app. That SP is not yet a postgres role inside your Lakebase project, so the migration fails until you grant it access. Look up the SP UUID:
+
+```bash
+databricks apps get agent-hub-dev -o json | python3 -c 'import json,sys; print(json.load(sys.stdin)["service_principal_client_id"])'
+```
+
+Then in the Lakebase project (UI: **Compute → Lakebase → `<your-lakebase-project>` → Roles**, or via SQL editor as project owner):
+
+```sql
+CREATE ROLE "<sp-uuid>" WITH LOGIN;
+GRANT CONNECT ON DATABASE databricks_postgres TO "<sp-uuid>";
+GRANT USAGE   ON SCHEMA public                TO "<sp-uuid>";
+GRANT ALL     ON ALL TABLES IN SCHEMA public  TO "<sp-uuid>";
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT ALL ON TABLES TO "<sp-uuid>";
+```
+
+Restart the app so the migration retries:
+
+```bash
+databricks apps stop  agent-hub-dev
+databricks apps start agent-hub-dev
+```
+
+This is a one-time setup per `(app, lakebase_project)` pair.
 
 ### 7 · First-login consent (OBO)
 
@@ -239,7 +269,9 @@ agent_hub/
 │   └── __dist__/             # Pre-built UI bundle (gitignored locally, shipped on deploy)
 ├── scripts/check_scopes.py   # Scope-drift guard (see step 8)
 ├── tests/                    # pytest suite
-└── docs/                     # Design docs (OBO auth, rollbacks, diagrams)
+├── docs/                     # Design docs (OBO auth, rollbacks, diagrams)
+└── .claude/skills/
+    └── installation-helper/  # AI-IDE skill that walks new deployers through Section 3-8
 ```
 
 ---
