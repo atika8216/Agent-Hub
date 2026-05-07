@@ -60,17 +60,31 @@ If you tried to add env to `databricks.yml`, move it back to `app.yaml`.
 
 The app's service principal exists but lacks Lakebase ACL grants. The migration runs as the SP, and Lakebase rejected the connection.
 
-Fix (run as a Lakebase admin in DBSQL or psql):
+**Preferred fix — run the bundled script.** It looks up the SP, mints a database credential as your CLI profile, and runs an idempotent grant:
 
-```sql
-GRANT CONNECT ON DATABASE "<lakebase_project_id>" TO "<sp-uuid>";
-GRANT USAGE   ON SCHEMA public                     TO "<sp-uuid>";
-GRANT ALL     ON ALL TABLES IN SCHEMA public       TO "<sp-uuid>";
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-  GRANT ALL ON TABLES TO "<sp-uuid>";
+```bash
+python scripts/grant_lakebase_sp.py \
+    --profile <profile> \
+    --lakebase-project <lakebase_project_id> \
+    --app-name <app-slug>
 ```
 
-The `<sp-uuid>` is in the error message. You can also see it under **Compute → Apps → <app> → Settings → Service principal**.
+Then restart so the migration retries:
+
+```bash
+databricks apps stop  <app-slug> --profile <profile>
+databricks apps start <app-slug> --profile <profile>
+```
+
+The script exits non-zero with a clear message if the profile lacks Lakebase admin (code `4`) or the project/endpoint isn't found (code `3`). See the script docstring for all exit codes.
+
+**While this is pending: the Admin link still works.** Any email listed in `BOOTSTRAP_ADMIN_EMAILS` is treated as `admin` regardless of DB state — `/api/v1/me` consults the env var before touching `user_roles`. So you can reach `/admin` even during a Lakebase outage.
+
+**UI fallback.** When the script can't run (e.g. air-gapped CLI), open **Compute → Lakebase → `<lakebase_project_id>` → Roles → New role**, pick **Service principal**, and paste the SP UUID. The UI calls the same Lakebase Roles API the script uses, so the resulting role has the required `LAKEBASE_OAUTH_V1` auth method and `DATABRICKS_SUPERUSER` membership.
+
+The `<sp-uuid>` is in the error message. You can also see it under **Compute → Apps → <app> → Settings → Service principal**, or via `databricks apps get <app-slug> -o json | jq .service_principal_client_id`.
+
+**Do NOT run `CREATE ROLE "<sp-uuid>" WITH LOGIN` in the Lakebase SQL editor.** That creates a `NO_LOGIN` postgres role: Lakebase tracks the role, but OAuth auth never engages, so the app still fails with `password authentication failed`. Only the Lakebase Roles API/UI sets `auth_method=LAKEBASE_OAUTH_V1` + `membership_roles=[DATABRICKS_SUPERUSER]`, which is what makes the SP's workspace OAuth token actually authenticate. If you've already created a stale role this way, the grant script will detect it (wrong `auth_method`) and recreate it cleanly.
 
 ## "scope X is not a valid scope" during `bundle deploy`
 

@@ -16,10 +16,10 @@ from .lakebase import LakebaseDependency
 def _bootstrap_admin_emails() -> set[str]:
     """Read comma-separated emails from BOOTSTRAP_ADMIN_EMAILS env var.
 
-    This list is *only* used by diagnostic endpoints that must keep working
-    when Lakebase is down (see ``require_debug_admin`` below). Case-insensitive
-    to match Databricks Apps header behaviour, which normalises emails to
-    lowercase.
+    Used by both ``_get_user_role`` (so the Admin UI works during a Lakebase
+    outage or fresh deploy where the SP grant has not run yet) and
+    ``require_debug_admin`` (diagnostic endpoints). Case-insensitive to match
+    Databricks Apps header behaviour, which normalises emails to lowercase.
     """
     raw = os.environ.get("BOOTSTRAP_ADMIN_EMAILS", "")
     return {e.strip().lower() for e in raw.split(",") if e.strip()}
@@ -41,10 +41,19 @@ def _resolve_user_email(request: Request) -> str:
 def _get_user_role(session: Session | None, email: str) -> str:
     """Look up the user's role from the user_roles table.
 
-    If no admin users exist at all, auto-promote this user to admin
-    (first-user-is-admin pattern for initial setup).
-    Returns 'user' if session is None (DB unavailable).
+    Resolution order:
+      1. ``BOOTSTRAP_ADMIN_EMAILS`` -- env-driven, DB-independent. Lets
+         the operator stay in as admin during a fresh deploy, a Lakebase
+         outage, or any state where ``user_roles`` is unavailable. This
+         mirrors what ``require_debug_admin`` already does and matches
+         the "you're never locked out" promise documented in the README.
+      2. ``user_roles`` row in Lakebase (DB-backed).
+      3. First-user-is-admin auto-promotion (when no admin row exists).
+
+    Returns 'user' only when none of the above apply.
     """
+    if email and email.lower() in _bootstrap_admin_emails():
+        return "admin"
     if session is None:
         return "user"
     try:

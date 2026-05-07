@@ -148,37 +148,33 @@ databricks bundle run agent_hub --target dev --profile <profile>
 
 The first deploy creates a fresh service principal per app. That SP exists at the workspace level but is **not yet a postgres role inside your Lakebase project**, so the migration will fail with `password authentication failed for user '<sp-uuid>'` until you grant access.
 
-Look up the SP UUID:
+Run the bundled script. It looks up the app's SP UUID, mints a short-lived database credential as the calling user, and runs an idempotent `CREATE ROLE` + `GRANT` block on the Lakebase project:
 
 ```bash
-databricks apps get <app_name>-dev --profile <profile> -o json | python3 -c 'import json,sys; print(json.load(sys.stdin)["service_principal_client_id"])'
+python scripts/grant_lakebase_sp.py \
+    --profile <profile> \
+    --lakebase-project <lakebase_project_id> \
+    --app-name <app_name>-dev
 ```
 
-Open the Lakebase project in the workspace UI:
-
-1. **Compute → Lakebase → `<lakebase_project_id>` → Roles**
-2. Click **Add role** → paste the SP UUID
-3. Grant `databricks_postgres` connect + `public` schema usage + table read/write
-
-Or, if you prefer SQL (connect as the project owner via the Lakebase SQL editor):
-
-```sql
-CREATE ROLE "<sp-uuid>" WITH LOGIN;
-GRANT CONNECT ON DATABASE databricks_postgres TO "<sp-uuid>";
-GRANT USAGE   ON SCHEMA public                TO "<sp-uuid>";
-GRANT ALL     ON ALL TABLES IN SCHEMA public  TO "<sp-uuid>";
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
-  GRANT ALL ON TABLES TO "<sp-uuid>";
-```
-
-After granting, restart the app so the migration retries:
+Then restart the app so the migration retries:
 
 ```bash
 databricks apps stop  <app_name>-dev --profile <profile>
 databricks apps start <app_name>-dev --profile <profile>
 ```
 
+The script is safe to re-run; subsequent invocations skip role creation if it already exists.
+
+**Prerequisite:** the CLI profile must be the Lakebase project owner (or an admin on it). If it isn't, the script exits with code `4` and a clear message — ask your Lakebase admin to run it with their profile.
+
+**UI fallback** (only if the script can't run — e.g. air-gapped CLI, locked-down environment): open **Compute → Lakebase → `<lakebase_project_id>` → Roles → New role**, pick **Service principal**, paste the SP UUID (from `databricks apps get <app_name>-dev -o json`), and confirm. The UI calls the same `POST /api/2.0/postgres/.../roles` endpoint the script uses.
+
+> **Why not raw SQL?** Running `CREATE ROLE "<sp-uuid>" WITH LOGIN` in the Lakebase SQL editor creates a `NO_LOGIN` postgres role — it does not enable Lakebase OAuth auth, so the app still fails with `password authentication failed`. The role spec needs `auth_method=LAKEBASE_OAUTH_V1` and `membership_roles=[DATABRICKS_SUPERUSER]`, which only the Lakebase Roles API (or UI) sets. Use the script or the UI; do not hand-roll SQL.
+
 This step is one-time per `(app, lakebase_project)` pair — subsequent redeploys reuse the same SP.
+
+**While this is pending: the Admin link still works.** Any email in `BOOTSTRAP_ADMIN_EMAILS` is treated as `admin` regardless of DB state, so you can reach `/admin` and investigate even before the grant lands.
 
 ## Step 8 — Smoke test
 
